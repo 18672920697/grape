@@ -12,5 +12,6 @@ func main() {
 	config := config.LoadConfig()
 
 	cache := cache.NewCache(config)
-	network.StartServer(config, cache)
+
+	server.StartServer(config, cache)
 }

@@ -18,6 +18,6 @@ func Parser(request string) (CommandData, error) {
 	return CommandData {
 		len,
 		split[1],
-		split[2:0],
+		split[2:],
 	}, nil
 }
