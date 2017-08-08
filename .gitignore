@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+grape
 
 # Test binary, build with `go test -c`
 *.test
