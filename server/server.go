@@ -45,6 +45,16 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		}
 
 		command, _:= protocol.Parser(string(request))
-		cache.HandleCommand(command)
+		status, resp := cache.HandleCommand(command)
+		switch status {
+		case protocol.RequestFinish:
+			{
+				(*conn).Write([]byte(resp))
+			}
+		case protocol.ProtocolNotSupport:
+			{
+				(*conn).Write([]byte("-Protocol not support\r\n"))
+			}
+		}
 	}
 }

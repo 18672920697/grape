@@ -21,31 +21,46 @@ func NewCache(c *config.Config) *Cache {
 	return cache
 }
 
-func (cache *Cache) HandleCommand(data protocol.CommandData) {
-	switch strings.ToUpper(data.Command) {
+func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, string){
+	switch strings.ToUpper(data.Args[0]) {
+	case "COMMAND":
+		{
+			return protocol.ProtocolNotSupport, ""
+		}
 	case "SET":
 		{
-
+			return cache.HandleSet(data.Args)
 		}
 	case "GET":
 		{
-
+			return cache.HandleGet(data.Args)
+		}
+	default:
+		{
+			return protocol.ProtocolNotSupport , ""
 		}
 	}
 }
 
-func (cache *Cache) Set(key string, value string) error {
+func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
+	key := args[1]
+	value := args[2]
+
 	cache.Lock()
 	defer cache.Unlock()
 	(*cache.storage)[key] = value
 
-	return nil
+	resp := fmt.Sprintf("+OK\r\n")
+	return protocol.RequestFinish, resp
 }
 
-func (cache *Cache) Get(key string) (string, error) {
+func (cache *Cache) HandleGet(args []string) (protocol.Status, string) {
+	key := args[1]
+
 	if value, ok := (*cache.storage)[key]; ok {
-		return value, nil
+		resp := fmt.Sprintf("$%d\r\n%s\r\n", len(value), value)
+		return protocol.RequestFinish, resp
 	} else {
-		return "", fmt.Errorf("Key not found in cache")
+		return protocol.RequestNotFound, ""
 	}
 }
