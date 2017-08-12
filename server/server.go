@@ -12,12 +12,11 @@ import (
 )
 
 func StartServer(config *config.Config, cache *cache.Cache) {
-
 	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Ip, config.Port))
 	if err != nil {
 		panic(err)
 	}
-	defer  listen.Close()
+	defer listen.Close()
 
 	for {
 		select {
@@ -42,20 +41,16 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 	for {
 		_, err := reader.Read(request)
 		if err != nil {
-			// TODO
+			log.Printf("Read data from %s failed", (*conn).RemoteAddr())
 		}
 
 		command, _:= protocol.Parser(string(request))
 		status, resp := cache.HandleCommand(command)
 		switch status {
 		case protocol.RequestFinish:
-			{
-				(*conn).Write([]byte(resp))
-			}
+			(*conn).Write([]byte(resp))
 		case protocol.ProtocolNotSupport:
-			{
-				(*conn).Write([]byte("-Protocol not support\r\n"))
-			}
+			(*conn).Write([]byte("-Protocol not support\r\n"))
 		}
 	}
 }
