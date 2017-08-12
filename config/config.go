@@ -28,7 +28,7 @@ func LoadConfig() *Config {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
-	return &Config{
+	return &Config {
 		viper.Get("heartbeatinterval").(int),
 		viper.GetString("ip"),
 		viper.Get("port").(int),

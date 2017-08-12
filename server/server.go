@@ -12,6 +12,7 @@ import (
 )
 
 func StartServer(config *config.Config, cache *cache.Cache) {
+
 	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Ip, config.Port))
 	if err != nil {
 		panic(err)
