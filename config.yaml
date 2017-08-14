@@ -1,8 +1,6 @@
 HeartbeatInterval: 100
 
-Ip: 127.0.0.1
-
-Port: 9000
+Address: 127.0.0.1:9000
 
 RemotePeers:
  - 127.0.0.0.1:9001

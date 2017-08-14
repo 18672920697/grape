@@ -7,8 +7,7 @@ import (
 
 type Config struct {
 	HeartbeatInterval int
-	Ip string
-	Port int
+	Address string
 	RemotePeers [] string
 }
 
@@ -19,8 +18,7 @@ func LoadConfig() *Config {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("heartbeatinterval", 100)
-	viper.SetDefault("ip", "127.0.0.1")
-	viper.SetDefault("port", 9010)
+	viper.SetDefault("ip", "127.0.0.1:9010")
 	viper.SetDefault("remotepeers", []string{})
 
 	err := viper.ReadInConfig() // Find and read the config file
@@ -30,8 +28,7 @@ func LoadConfig() *Config {
 
 	return &Config {
 		viper.Get("heartbeatinterval").(int),
-		viper.GetString("ip"),
-		viper.Get("port").(int),
+		viper.GetString("address"),
 		viper.GetStringSlice("remotepeers"),
 	}
 }
