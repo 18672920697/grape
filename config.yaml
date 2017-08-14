@@ -3,4 +3,4 @@ HeartbeatInterval: 100
 Address: 127.0.0.1:9000
 
 RemotePeers:
- - 127.0.0.0.1:9001
+ - 127.0.0.1:9001

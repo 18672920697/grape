@@ -30,6 +30,3 @@ func Parser(request string) (CommandData, error) {
 	}, nil
 }
 
-func CreateResponse() {
-
-}
