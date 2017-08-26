@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"log"
 	"bufio"
-	//"time"
 	"io"
 )
+
+var peer map[string]bool
 
 func StartServer(config *config.Config, cache *cache.Cache) {
 	listen, err := net.Listen("tcp", fmt.Sprintf("%s", config.Address))
@@ -55,6 +56,8 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		switch status {
 		case protocol.RequestFinish:
 			(*conn).Write([]byte(resp))
+		case protocol.RequestNotFound:
+			(*conn).Write([]byte("-Not found\r\n"))
 		case protocol.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		case protocol.ProtocolOtherNode:
@@ -68,20 +71,24 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 func resendRequest(request, addr string) string {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		log.Printf("ResolveTCPAddr failed:", err.Error())
+		log.Printf("ResolveTCPAddr failed: %s", err.Error())
+		return string("-Can not connect to destination Node\r\n")
 	}
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err !=nil {
-		log.Printf("Dial failed:", err.Error())
+		log.Printf("Dial failed: %s", err.Error())
+		return string("-Can not connect to destination Node\r\n")
 	}
 	_, err = conn.Write([]byte(request))
 	if err != nil {
-		log.Printf("Write to the peer-server failed:", err.Error())
+		log.Printf("Write to the peer-server failed: %s", err.Error())
+		return string("-Can not connect to destination Node\r\n")
 	}
 	reply := make([]byte, 1024)
 	_, err = conn.Read(reply)
 	if err != nil {
-		log.Printf("Read from the peer-server failed:", err.Error())
+		log.Printf("Read from the peer-server failed: %s", err.Error())
+		return string("-Can not connect to destination Node\r\n")
 	}
 	return string(reply)
 }
