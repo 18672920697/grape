@@ -68,8 +68,8 @@ func (c *Consistent) SetKey(key string) (string, error) {
 	if len(c.nodes) == 0 {
 		return "", ErrEmptyCircle
 	}
-	hash_key := c.hashKey(key)
-	i := c.search(hash_key)
+	hashKey := c.hashKey(key)
+	i := c.search(hashKey)
 	return c.nodes[c.sortedNodes[i]], nil
 
 }
