@@ -1,15 +1,15 @@
 package server
 
 import (
-	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/cache"
+	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/protocol"
 
-	"net"
-	"fmt"
-	"log"
 	"bufio"
+	"fmt"
 	"io"
+	"log"
+	"net"
 )
 
 var peer map[string]bool
@@ -51,7 +51,7 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 			}
 		}
 
-		command, _:= protocol.Parser(string(request))
+		command, _ := protocol.Parser(string(request))
 		status, resp := cache.HandleCommand(command)
 		switch status {
 		case protocol.RequestFinish:
@@ -75,7 +75,7 @@ func resendRequest(request, addr string) string {
 		return string("-Can not connect to destination Node\r\n")
 	}
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err !=nil {
+	if err != nil {
 		log.Printf("Dial failed: %s", err.Error())
 		return string("-Can not connect to destination Node\r\n")
 	}

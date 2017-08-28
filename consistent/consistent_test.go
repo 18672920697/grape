@@ -1,9 +1,9 @@
 package consistent
 
 import (
-	"testing"
 	"sort"
 	"strconv"
+	"testing"
 )
 
 func checkNum(num, expected int, t *testing.T) {
@@ -56,4 +56,3 @@ func TestSetKey(t *testing.T) {
 		}
 	}
 }
-

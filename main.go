@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/leviathan1995/grape/config"
-	"github.com/leviathan1995/grape/server"
 	"github.com/leviathan1995/grape/cache"
+	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
+	"github.com/leviathan1995/grape/server"
 
 	"flag"
 	"log"
@@ -13,7 +13,7 @@ import (
 func printConf(conf config.Config) {
 	log.Printf("address: %s", conf.Address)
 	log.Printf("heart beat interval: %d", conf.HeartbeatInterval)
-	for _,addr := range conf.RemotePeers  {
+	for _, addr := range conf.RemotePeers {
 		log.Printf("the peer-server: %s", addr)
 	}
 }

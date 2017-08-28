@@ -1,10 +1,10 @@
 package consistent
 
 import (
-	"sync"
+	"errors"
 	"hash/crc32"
 	"sort"
-	"errors"
+	"sync"
 )
 
 type uints []uint32
@@ -18,7 +18,7 @@ func (x uints) Swap(i, j int) { x[i], x[j] = x[j], x[i] }
 var ErrEmptyCircle = errors.New("empty circle")
 
 type Consistent struct {
-	nodes map[uint32]string
+	nodes       map[uint32]string
 	sortedNodes uints
 	sync.RWMutex
 }
@@ -29,14 +29,14 @@ func New() *Consistent {
 	return c
 }
 
-func (c *Consistent) AddNode (node string) {
+func (c *Consistent) AddNode(node string) {
 	c.Lock()
 	defer c.Unlock()
 	c.nodes[c.hashKey(node)] = node
 	c.sortCircle()
 }
 
-func (c *Consistent) RemoveNode (node string) {
+func (c *Consistent) RemoveNode(node string) {
 	c.Lock()
 	defer c.Unlock()
 	delete(c.nodes, c.hashKey(node))
@@ -65,7 +65,7 @@ func (c *Consistent) SetKey(key string) (string, error) {
 	c.RLock()
 	defer c.RUnlock()
 	if len(c.nodes) == 0 {
-		return  "", ErrEmptyCircle
+		return "", ErrEmptyCircle
 	}
 	hash_key := c.hashKey(key)
 	i := c.search(hash_key)

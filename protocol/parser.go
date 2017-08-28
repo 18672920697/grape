@@ -1,17 +1,16 @@
 package protocol
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type Status int
 
 type CommandData struct {
 	length int
-	Args []string
+	Args   []string
 }
-
 
 func Parser(request string) (CommandData, error) {
 	var args []string
@@ -21,12 +20,11 @@ func Parser(request string) (CommandData, error) {
 	len := len(split)
 
 	cmd_len, _ := strconv.Atoi(string(flag))
-	for index := 2; index < len; index = index +2 {
+	for index := 2; index < len; index = index + 2 {
 		args = append(args, split[index])
 	}
-	return CommandData {
+	return CommandData{
 		cmd_len,
 		args,
 	}, nil
 }
-

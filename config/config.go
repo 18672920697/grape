@@ -1,21 +1,21 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	"fmt"
+	"github.com/spf13/viper"
 	"path/filepath"
 )
 
 type Config struct {
 	HeartbeatInterval int
-	Address string
-	RemotePeers [] string
+	Address           string
+	RemotePeers       []string
 }
 
 func LoadConfig(config string) *Config {
 	path := filepath.Dir(config)
 	filename := filepath.Base(config)
-	conf := filename[0:len(filename) - len(filepath.Ext(filename))]
+	conf := filename[0 : len(filename)-len(filepath.Ext(filename))]
 
 	viper.SetConfigName(conf)
 	viper.SetConfigType("yaml")
@@ -26,11 +26,11 @@ func LoadConfig(config string) *Config {
 	viper.SetDefault("remotepeers", []string{})
 
 	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil { // Handle errors reading the config file
+	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
-	return &Config {
+	return &Config{
 		viper.Get("heartbeatinterval").(int),
 		viper.GetString("address"),
 		viper.GetStringSlice("remotepeers"),

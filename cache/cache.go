@@ -1,28 +1,28 @@
 package cache
 
 import (
+	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
 	"github.com/leviathan1995/grape/protocol"
-	"github.com/leviathan1995/grape/config"
 
-	"sync"
-	"strings"
 	"fmt"
+	"strings"
+	"sync"
 )
 
 type Cache struct {
-	storage *map[string]string
-	config *config.Config
+	storage     *map[string]string
+	config      *config.Config
 	consistency *consistent.Consistent
 	sync.Mutex
 }
 
-func NewCache(config * config.Config, consistency *consistent.Consistent) *Cache {
+func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache {
 	storage := make(map[string]string)
 
-	cache := &Cache {
-		storage: &storage,
-		config: config,
+	cache := &Cache{
+		storage:     &storage,
+		config:      config,
 		consistency: consistency,
 	}
 	return cache
@@ -31,14 +31,14 @@ func NewCache(config * config.Config, consistency *consistent.Consistent) *Cache
 // Check this key whether store in node
 func (cache *Cache) CheckKey(key string) (bool, string) {
 	server, _ := cache.consistency.SetKey(key)
-	if server !=  cache.config.Address {
+	if server != cache.config.Address {
 		return false, server
 	} else {
 		return true, ""
 	}
 }
 
-func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, string){
+func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, string) {
 	switch strings.ToUpper(data.Args[0]) {
 	case "COMMAND":
 		return protocol.ProtocolNotSupport, ""
@@ -47,7 +47,7 @@ func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, s
 	case "GET":
 		return cache.HandleGet(data.Args)
 	default:
-		return protocol.ProtocolNotSupport , ""
+		return protocol.ProtocolNotSupport, ""
 	}
 }
 
