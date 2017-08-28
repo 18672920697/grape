@@ -1,3 +1,4 @@
+//
 package consistent
 
 import (

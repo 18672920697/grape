@@ -1,5 +1,7 @@
+// constant
 package protocol
 
+// status
 const (
 	RequestFinish      = iota
 	RequestNotFound    = iota
