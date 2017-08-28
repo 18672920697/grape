@@ -1,0 +1,11 @@
+language: go
+sudo: false
+go:
+  - 1.8
+os:
+  - linux
+  - osx
+install:
+  - go get github.com/spf13/viper
+script:
+  - go build
