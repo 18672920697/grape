@@ -11,9 +11,10 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 )
 
-var peer map[string]bool
+var PeerStatus map[string]bool
 
 func StartServer(config *config.Config, cache *cache.Cache) {
 	listen, err := net.Listen("tcp", fmt.Sprintf("%s", config.Address))
@@ -21,6 +22,16 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 		panic(err)
 	}
 	defer listen.Close()
+
+	// Send heartbeat
+	PeerStatus = make(map[string]bool)
+	sendHeartbeat(config)
+
+	// The network checker
+	// Start service
+
+	// Send heartbeat to others at a fixed interval
+	go Heartbeat(config)
 
 	for {
 		select {
@@ -62,13 +73,13 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		case protocol.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		case protocol.ProtocolOtherNode:
-			// TODO
 			resp = resendRequest(string(request), resp)
 			(*conn).Write([]byte(resp))
 		}
 	}
 }
 
+// the server could not response the client's request, maybe need to send to other servers
 func resendRequest(request, addr string) string {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
@@ -92,4 +103,50 @@ func resendRequest(request, addr string) string {
 		return string("-Can not connect to destination Node\r\n")
 	}
 	return string(reply)
+}
+
+// all servers need to send heartbeat to other servers when it starts
+func Heartbeat(config *config.Config)  {
+	ticker := time.NewTicker(time.Second * time.Duration(config.HeartbeatInterval))
+	for _ = range ticker.C {
+		sendHeartbeat(config)
+	}
+}
+
+func sendHeartbeat(config *config.Config) {
+	for _, node := range config.RemotePeers {
+		tcpAddr, err := net.ResolveTCPAddr("tcp", node)
+		if err != nil {
+			PeerStatus[node] = false
+			continue
+		}
+		conn, err := net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			log.Printf("Dial failed: %s", err.Error())
+			PeerStatus[node] = false
+			continue
+		}
+
+		request := "*3\r\nPING\r\n" + config.Address + "\r\n"
+		_, err = conn.Write([]byte(request))
+		if err != nil {
+			PeerStatus[node] = false
+		}
+		reply := make([]byte, 1024)
+		_, err = conn.Read(reply)
+		if err != nil {
+			PeerStatus[node] = false
+			continue
+		}
+		rep, _ := protocol.Parser(string(reply))
+		if (rep.Args[0] == "PONG") {
+			PeerStatus[node] = true
+			continue
+		}
+		if (PeerStatus[node]) {
+			log.Printf("Send heartbeat to %s succeeded", node)
+		} else {
+			log.Printf("Send heartbeat to %s failed", node)
+		}
+	}
 }

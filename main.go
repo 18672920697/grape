@@ -36,7 +36,7 @@ func main() {
 		consistency.AddNode(peer)
 	}
 
-	cache := cache.NewCache(config, consistency)
+	cache := cache.NewCache(config, consistency, &server.PeerStatus)
 
 	server.StartServer(config, cache)
 }

@@ -1,4 +1,4 @@
-HeartbeatInterval: 100
+HeartbeatInterval: 60
 
 Address: 127.0.0.1:9001
 
