@@ -4,17 +4,17 @@ package server
 import (
 	"github.com/leviathan1995/grape/cache"
 	"github.com/leviathan1995/grape/config"
-	"github.com/leviathan1995/grape/protocol"
 	"github.com/leviathan1995/grape/logger"
+	"github.com/leviathan1995/grape/protocol"
 
 	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func StartServer(config *config.Config, cache *cache.Cache) {
@@ -33,8 +33,8 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 		sendHeartbeat(cache)
 	}
 
-	for peer, status := range *cache.RouteTable  {
-		if (status) {
+	for peer, status := range *cache.RouteTable {
+		if status {
 			logger.Info.Printf("Connecting to node %s OK", peer)
 		}
 	}
@@ -118,7 +118,7 @@ func resendRequest(request, addr string) string {
 }
 
 // All servers need to send heartbeat to other servers when it starts
-func Heartbeat(config *config.Config, cache *cache.Cache)  {
+func Heartbeat(config *config.Config, cache *cache.Cache) {
 	ticker := time.NewTicker(time.Second * time.Duration(config.HeartbeatInterval))
 
 	for _ = range ticker.C {
@@ -183,16 +183,16 @@ func sendHeartbeat(cache *cache.Cache) {
 			continue
 		}
 
-		if (command.Args[0] == "PONG") {
+		if command.Args[0] == "PONG" {
 			(*cache).RWMutex.Lock()
 			(*cache.RouteTable)[node] = true
 			(*cache).RWMutex.Unlock()
 			continue
-		} else if (command.Args[0] == "Deny heartbeat"){
-			logger.Warning.Printf(command.Args[0] + " by %s", node)
+		} else if command.Args[0] == "Deny heartbeat" {
+			logger.Warning.Printf(command.Args[0]+" by %s", node)
 
 			// Join cluster
-			joinAddr , err := net.ResolveTCPAddr("tcp", node)
+			joinAddr, err := net.ResolveTCPAddr("tcp", node)
 			joinConn, err := net.DialTCP("tcp", nil, joinAddr)
 			joinRequest := fmt.Sprintf("*2\r\n$4\r\nJOIN\r\n$%d\r\n%s\r\n", len(localAddr), localAddr)
 			_, err = joinConn.Write([]byte(joinRequest))
@@ -208,16 +208,16 @@ func sendHeartbeat(cache *cache.Cache) {
 			if err != nil {
 				continue
 			}
-			if (command.Args[0] == "OK") {
+			if command.Args[0] == "OK" {
 				logger.Info.Printf("Receive route table infomation from cluster, and update it")
-				for index := 1; index < len(command.Args); index++  {
+				for index := 1; index < len(command.Args); index++ {
 					(*cache).RWMutex.Lock()
 					(*cache.RouteTable)[command.Args[index]] = false
 					(*cache).RWMutex.Unlock()
 				}
 				// TODO print route table
 
-			} else if (command.Args[0] == "FAIL") {
+			} else if command.Args[0] == "FAIL" {
 				// TODO
 			}
 			joinConn.Close()
@@ -281,10 +281,10 @@ func handleHeartbeat(conn *net.Conn, cache *cache.Cache) {
 		var status protocol.Status
 		var resp string
 		switch strings.ToUpper(command.Args[0]) {
-			case "PING":
-				status, resp = cache.HandlePing(command.Args)
-			default:
-				status, resp = protocol.ProtocolNotSupport, ""
+		case "PING":
+			status, resp = cache.HandlePing(command.Args)
+		default:
+			status, resp = protocol.ProtocolNotSupport, ""
 		}
 
 		// Check where is heartbeat coming from

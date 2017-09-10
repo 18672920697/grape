@@ -6,19 +6,19 @@ import (
 	"github.com/leviathan1995/grape/consistent"
 	"github.com/leviathan1995/grape/protocol"
 
+	"bytes"
 	"fmt"
+	"github.com/leviathan1995/grape/logger"
+	"net"
 	"strings"
 	"sync"
-	"bytes"
-	"net"
-	"github.com/leviathan1995/grape/logger"
 )
 
 type Cache struct {
 	storage     *map[string]string
 	Config      *config.Config
 	consistency *consistent.Consistent
-	RouteTable 	*map[string]bool
+	RouteTable  *map[string]bool
 	sync.Mutex
 	sync.RWMutex
 }
@@ -113,14 +113,14 @@ func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 
 	title := fmt.Sprintf("$%d\r\n%s\r\n", len("Connect status:"), "Connect status:")
 	resp.WriteString(title)
-	for peer, status := range *cache.RouteTable{
+	for peer, status := range *cache.RouteTable {
 		var str_status string
 		if status {
 			str_status = "Up"
 		} else {
 			str_status = "Down"
 		}
-		peer_status := fmt.Sprintf("$%d\r\n%s\r\n", len(peer + ": " + str_status), peer + ": " + str_status)
+		peer_status := fmt.Sprintf("$%d\r\n%s\r\n", len(peer+": "+str_status), peer+": "+str_status)
 		resp.WriteString(peer_status)
 	}
 	return protocol.RequestFinish, resp.String()
@@ -129,7 +129,7 @@ func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
 	joinAddr := args[1]
 
-	routeResp := fmt.Sprintf("*%d\r\n$2\r\nOK\r\n", len(*cache.RouteTable) + 1)
+	routeResp := fmt.Sprintf("*%d\r\n$2\r\nOK\r\n", len(*cache.RouteTable)+1)
 
 	var routeTable []string
 	(*cache).RWMutex.RLock()
@@ -143,7 +143,7 @@ func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
 		nodeResp := fmt.Sprintf("$%d\r\n%s\r\n", len(node), node)
 		routeResp += nodeResp
 
-		nodeAddr , _ := net.ResolveTCPAddr("tcp", node)
+		nodeAddr, _ := net.ResolveTCPAddr("tcp", node)
 		conn, err := net.DialTCP("tcp", nil, nodeAddr)
 		if err != nil {
 			continue
@@ -171,8 +171,8 @@ func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 	removeAddr := args[1]
 
 	// Broadcast
-	for node, _ := range (*cache.RouteTable) {
-		nodeAddr , _ := net.ResolveTCPAddr("tcp", node)
+	for node, _ := range *cache.RouteTable {
+		nodeAddr, _ := net.ResolveTCPAddr("tcp", node)
 		conn, err := net.DialTCP("tcp", nil, nodeAddr)
 		if err != nil {
 			continue

@@ -4,8 +4,8 @@ import (
 	"github.com/leviathan1995/grape/cache"
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
-	"github.com/leviathan1995/grape/server"
 	"github.com/leviathan1995/grape/logger"
+	"github.com/leviathan1995/grape/server"
 
 	"flag"
 	"os"

@@ -8,7 +8,7 @@ import (
 type Status int
 
 type CommandData struct {
-	Args   []string
+	Args []string
 }
 
 // Parse request
@@ -24,8 +24,8 @@ func Parser(request string) (CommandData, error) {
 	}
 }
 
-func simpleString(request string) (CommandData, error){
-	var args [] string
+func simpleString(request string) (CommandData, error) {
+	var args []string
 	split := strings.Split(request[1:], "\r\n")
 
 	args = append(args, split[0])
@@ -50,7 +50,7 @@ func array(request string) (CommandData, error) {
 }
 
 func errors(request string) (CommandData, error) {
-	var args [] string
+	var args []string
 	split := strings.Split(request[1:], "\r\n")
 
 	args = append(args, split[0])

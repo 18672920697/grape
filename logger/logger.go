@@ -1,14 +1,14 @@
 package logger
 
 import (
-	"log"
 	"io"
+	"log"
 )
 
 var (
-	Info *log.Logger
+	Info    *log.Logger
 	Warning *log.Logger
-	Error *log.Logger
+	Error   *log.Logger
 )
 
 func Init(infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) {
@@ -24,5 +24,3 @@ func Init(infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) 
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
-
-
