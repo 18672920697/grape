@@ -63,6 +63,8 @@ func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, s
 		return cache.HandleInfo(data.Args)
 	case "JOIN":
 		return cache.HandleJoin(data.Args)
+	case "REMOVE":
+		return cache.HandleRemove(data.Args)
 	default:
 		return protocol.ProtocolNotSupport, ""
 	}
@@ -107,22 +109,29 @@ func (cache *Cache) HandlePing(args []string) (protocol.Status, string) {
 func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 	var resp bytes.Buffer
 
+	(*cache).RWMutex.RLock()
 	num := fmt.Sprintf("*%d\r\n", len(*cache.RouteTable)+1)
+	(*cache).RWMutex.RUnlock()
 	resp.WriteString(num)
 
 	title := fmt.Sprintf("$%d\r\n%s\r\n", len("Connect status:"), "Connect status:")
 	resp.WriteString(title)
+
+	(*cache).RWMutex.RLock()
 	for peer, status := range *cache.RouteTable {
-		var str_status string
+		var str_status, peer_status string
 		if status {
 			str_status = "Up"
 		} else {
 			str_status = "Down"
 		}
-		peer_status := fmt.Sprintf("$%d\r\n%s\r\n", len(peer+": "+str_status), peer+": "+str_status)
+		peer_status = fmt.Sprintf("$%d\r\n%s\r\n", len(peer+": "+str_status), peer+": "+str_status)
 		resp.WriteString(peer_status)
 	}
-	return protocol.RequestFinish, resp.String()
+	(*cache).RWMutex.RUnlock()
+
+	strResp := resp.String()
+	return protocol.RequestFinish, strResp
 }
 
 func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
@@ -169,8 +178,15 @@ func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
 func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 	removeAddr := args[1]
 
-	// Broadcast
+	var routeTable []string
+	(*cache).RWMutex.RLock()
 	for node, _ := range *cache.RouteTable {
+		routeTable = append(routeTable, node)
+	}
+	(*cache).RWMutex.RUnlock()
+
+	// Broadcast
+	for _, node := range routeTable {
 		nodeAddr, _ := net.ResolveTCPAddr("tcp", node)
 		conn, err := net.DialTCP("tcp", nil, nodeAddr)
 		if err != nil {
@@ -178,14 +194,27 @@ func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 		}
 		defer (*conn).Close()
 
-		request := fmt.Sprintf("*2\r\n$4\r\nPING\r\n$%d\r\n%s\r\n", len(removeAddr), removeAddr)
+		request := fmt.Sprintf("*2\r\n$4\r\nREMOVE\r\n$%d\r\n%s\r\n", len(removeAddr), removeAddr)
 		_, err = conn.Write([]byte(request))
 		if err != nil {
 			continue
 		}
 	}
-	if _, ok := (*cache.RouteTable)[removeAddr]; ok {
-		delete((*cache.RouteTable), removeAddr)
+
+	if removeAddr == (*cache).Config.Address {
+		(*cache).RWMutex.Lock()
+		for node, _ := range *cache.RouteTable {
+			delete((*cache.RouteTable), node)
+			logger.Info.Printf("Remove %s from route table", removeAddr)
+		}
+		(*cache).RWMutex.Unlock()
+	} else {
+		(*cache).RWMutex.Lock()
+		if _, ok := (*cache.RouteTable)[removeAddr]; ok {
+			delete((*cache.RouteTable), removeAddr)
+			logger.Info.Printf("Remove %s from route table", removeAddr)
+		}
+		(*cache).RWMutex.Unlock()
 	}
-	return protocol.RequestFinish, "OK"
+	return protocol.RequestFinish, "+OK\r\n"
 }
