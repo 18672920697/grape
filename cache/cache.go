@@ -141,7 +141,7 @@ func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
 
 	var routeTable []string
 	(*cache).RWMutex.RLock()
-	for node, _ := range *cache.RouteTable {
+	for node := range *cache.RouteTable {
 		routeTable = append(routeTable, node)
 	}
 	(*cache).RWMutex.RUnlock()
@@ -180,7 +180,7 @@ func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 
 	var routeTable []string
 	(*cache).RWMutex.RLock()
-	for node, _ := range *cache.RouteTable {
+	for node := range *cache.RouteTable {
 		routeTable = append(routeTable, node)
 	}
 	(*cache).RWMutex.RUnlock()
@@ -203,7 +203,7 @@ func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 
 	if removeAddr == (*cache).Config.Address {
 		(*cache).RWMutex.Lock()
-		for node, _ := range *cache.RouteTable {
+		for node := range *cache.RouteTable {
 			delete((*cache.RouteTable), node)
 			logger.Info.Printf("Remove %s from route table", removeAddr)
 		}

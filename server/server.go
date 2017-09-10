@@ -120,7 +120,7 @@ func resendRequest(request, addr string) string {
 func Heartbeat(config *config.Config, cache *cache.Cache) {
 	ticker := time.NewTicker(time.Second * time.Duration(config.HeartbeatInterval))
 
-	for _ = range ticker.C {
+	for range ticker.C {
 		sendHeartbeat(cache)
 		ClusterConnected(cache.RouteTable)
 	}
@@ -131,7 +131,7 @@ func sendHeartbeat(cache *cache.Cache) {
 	var routeTable []string
 
 	(*cache).RWMutex.RLock()
-	for node, _ := range *cache.RouteTable {
+	for node := range *cache.RouteTable {
 		routeTable = append(routeTable, node)
 	}
 	(*cache).RWMutex.RUnlock()
