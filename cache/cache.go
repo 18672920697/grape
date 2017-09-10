@@ -10,36 +10,40 @@ import (
 	"strings"
 	"sync"
 	"bytes"
+	"net"
+	"github.com/leviathan1995/grape/logger"
 )
 
 type Cache struct {
 	storage     *map[string]string
-	config      *config.Config
+	Config      *config.Config
 	consistency *consistent.Consistent
-	routeTable []string
-	peerStatus *map[string]bool
+	RouteTable 	*map[string]bool
 	sync.Mutex
+	sync.RWMutex
 }
 
-func NewCache(config *config.Config, consistency *consistent.Consistent, peerStatus *map[string]bool) *Cache {
+func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache {
 	storage := make(map[string]string)
 
+	route := make(map[string]bool)
+	for _, node := range config.RemotePeers {
+		route[node] = false
+	}
 	cache := &Cache{
 		storage:     &storage,
-		config:      config,
+		Config:      config,
 		consistency: consistency,
-		peerStatus: peerStatus,
+		RouteTable:  &route,
 	}
-	for _, node := range config.RemotePeers {
-		cache.routeTable = append(cache.routeTable, node)
-	}
+
 	return cache
 }
 
 // Check this key whether store in node
 func (cache *Cache) CheckKey(key string) (bool, string) {
 	server, _ := cache.consistency.SetKey(key)
-	if server != cache.config.Address {
+	if server != cache.Config.Address {
 		return false, server
 	} else {
 		return true, ""
@@ -58,6 +62,8 @@ func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, s
 		return cache.HandlePing(data.Args)
 	case "INFO":
 		return cache.HandleInfo(data.Args)
+	case "JOIN":
+		return cache.HandleJoin(data.Args)
 	default:
 		return protocol.ProtocolNotSupport, ""
 	}
@@ -71,8 +77,8 @@ func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
 	}
 	value := args[2]
 
-	cache.Lock()
-	defer cache.Unlock()
+	cache.Mutex.Lock()
+	defer cache.Mutex.Unlock()
 	(*cache.storage)[key] = value
 
 	resp := fmt.Sprintf("+OK\r\n")
@@ -102,12 +108,12 @@ func (cache *Cache) HandlePing(args []string) (protocol.Status, string) {
 func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 	var resp bytes.Buffer
 
-	num := fmt.Sprintf("*%d\r\n", len(*cache.peerStatus)+1)
+	num := fmt.Sprintf("*%d\r\n", len(*cache.RouteTable)+1)
 	resp.WriteString(num)
 
 	title := fmt.Sprintf("$%d\r\n%s\r\n", len("Connect status:"), "Connect status:")
 	resp.WriteString(title)
-	for peer, status := range *cache.peerStatus{
+	for peer, status := range *cache.RouteTable{
 		var str_status string
 		if status {
 			str_status = "Up"
@@ -118,4 +124,69 @@ func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 		resp.WriteString(peer_status)
 	}
 	return protocol.RequestFinish, resp.String()
+}
+
+func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
+	joinAddr := args[1]
+
+	routeResp := fmt.Sprintf("*%d\r\n$2\r\nOK\r\n", len(*cache.RouteTable) + 1)
+
+	var routeTable []string
+	(*cache).RWMutex.RLock()
+	for node, _ := range *cache.RouteTable {
+		routeTable = append(routeTable, node)
+	}
+	(*cache).RWMutex.RUnlock()
+
+	// Broadcast
+	for _, node := range routeTable {
+		nodeResp := fmt.Sprintf("$%d\r\n%s\r\n", len(node), node)
+		routeResp += nodeResp
+
+		nodeAddr , _ := net.ResolveTCPAddr("tcp", node)
+		conn, err := net.DialTCP("tcp", nil, nodeAddr)
+		if err != nil {
+			continue
+		}
+		defer (*conn).Close()
+
+		request := fmt.Sprintf("*2\r\n$4\r\nJOIN\r\n$%d\r\n%s\r\n", len(joinAddr), joinAddr)
+		_, err = conn.Write([]byte(request))
+		if err != nil {
+			continue
+		}
+	}
+	if joinAddr != (*cache).Config.Address {
+		(*cache).RWMutex.Lock()
+		if _, ok := (*cache.RouteTable)[joinAddr]; !ok {
+			(*cache.RouteTable)[joinAddr] = false
+			logger.Info.Printf("Add %s to route table", joinAddr)
+		}
+		(*cache).RWMutex.Unlock()
+	}
+	return protocol.RequestFinish, routeResp
+}
+
+func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
+	removeAddr := args[1]
+
+	// Broadcast
+	for node, _ := range (*cache.RouteTable) {
+		nodeAddr , _ := net.ResolveTCPAddr("tcp", node)
+		conn, err := net.DialTCP("tcp", nil, nodeAddr)
+		if err != nil {
+			continue
+		}
+		defer (*conn).Close()
+
+		request := fmt.Sprintf("*2\r\n$4\r\nPING\r\n$%d\r\n%s\r\n", len(removeAddr), removeAddr)
+		_, err = conn.Write([]byte(request))
+		if err != nil {
+			continue
+		}
+	}
+	if _, ok := (*cache.RouteTable)[removeAddr]; ok {
+		delete((*cache.RouteTable), removeAddr)
+	}
+	return protocol.RequestFinish, "OK"
 }
