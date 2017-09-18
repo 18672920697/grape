@@ -1,4 +1,3 @@
-//
 package consistent
 
 import (
@@ -12,6 +11,7 @@ func checkNum(num, expected int, t *testing.T) {
 		t.Errorf("get %d, expected %d", num, expected)
 	}
 }
+
 func TestNew(t *testing.T) {
 	x := New()
 	if x == nil {
