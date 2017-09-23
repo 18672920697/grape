@@ -4,3 +4,5 @@ Address: 127.0.0.1:9003
 
 RemotePeers:
  - 127.0.0.1:9001
+
+Shards: 8
