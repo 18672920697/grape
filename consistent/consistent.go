@@ -33,18 +33,18 @@ func New() *Consistent {
 func (c *Consistent) AddNode(node string) {
 	c.Lock()
 	defer c.Unlock()
-	c.nodes[c.hashKey(node)] = node
+	c.nodes[c.HashKey(node)] = node
 	c.sortCircle()
 }
 
 func (c *Consistent) RemoveNode(node string) {
 	c.Lock()
 	defer c.Unlock()
-	delete(c.nodes, c.hashKey(node))
+	delete(c.nodes, c.HashKey(node))
 	c.sortCircle()
 }
 
-func (c *Consistent) hashKey(key string) uint32 {
+func (c *Consistent) HashKey(key string) uint32 {
 	if len(key) < 64 {
 		var scratch [64]byte
 		copy(scratch[:], key)
@@ -68,7 +68,7 @@ func (c *Consistent) SetKey(key string) (string, error) {
 	if len(c.nodes) == 0 {
 		return "", ErrEmptyCircle
 	}
-	hashKey := c.hashKey(key)
+	hashKey := c.HashKey(key)
 	i := c.search(hashKey)
 	return c.nodes[c.sortedNodes[i]], nil
 

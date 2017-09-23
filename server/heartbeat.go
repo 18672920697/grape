@@ -166,7 +166,6 @@ func handleHeartbeat(conn *net.Conn, cache *cache.Cache) {
 		_, err := reader.Read(request)
 		if err != nil {
 			if err == io.EOF {
-				//logger.Info.Printf("Close connection: %s", (*conn).LocalAddr())
 				return
 			}
 		}

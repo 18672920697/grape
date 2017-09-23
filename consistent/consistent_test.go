@@ -52,7 +52,7 @@ func TestSetKey(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		server, err := x.SetKey("key" + strconv.Itoa(i))
-		if _, ok := x.nodes[x.hashKey(server)]; !ok {
+		if _, ok := x.nodes[x.HashKey(server)]; !ok {
 			t.Error(err)
 		}
 	}
