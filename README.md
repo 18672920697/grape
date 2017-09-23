@@ -39,6 +39,7 @@ Connect any of a node in cluster, use `REMOVE IP PORT`
 	OK
 	
 ## TODO
+* TTL
 * LRU algorithm
 * Monitor nodes survival
 
