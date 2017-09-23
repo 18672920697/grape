@@ -11,7 +11,7 @@ type Config struct {
 	HeartbeatInterval int
 	Address           string
 	RemotePeers       []string
-	Shards			  int
+	Shards            int
 }
 
 func LoadConfig(config string) *Config {

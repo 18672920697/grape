@@ -10,7 +10,7 @@ func testJoint() {
 	testArray := make(map[string]CommandData)
 
 	req1 := "*3\r\n$3SET\r\n$3\r\nKEY\r\n$5\r\nVALUE\r\n"
-	cmd1 := [3]string{"SET", "KEY", "VALUE",}
+	cmd1 := [3]string{"SET", "KEY", "VALUE"}
 	testArray[req1] = CommandData{cmd1[:]}
 
 	req2 := "+OK\r\n"
@@ -22,7 +22,7 @@ func testJoint() {
 	testArray[req3] = CommandData{cmd3[:]}
 }
 
-func checkEqual(parse CommandData,  standard CommandData, t *testing.T) {
+func checkEqual(parse CommandData, standard CommandData, t *testing.T) {
 	if len(parse.Args) != len(standard.Args) {
 		t.Errorf("parse test error")
 	}
@@ -37,7 +37,7 @@ func TestParser(t *testing.T) {
 	testJoint()
 
 	for req, cmd := range testArray {
-		cmdParse,_ := Parser(req)
+		cmdParse, _ := Parser(req)
 		checkEqual(cmdParse, cmd, t)
 	}
 }
