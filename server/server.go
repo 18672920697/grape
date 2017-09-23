@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	receiveBufferSize = 1024*1024*2
-	sendBufferSize = 1024*1024*2
+	receiveBufferSize = 1024 * 4
+	sendBufferSize    = 1024 * 4
 )
 
 func StartServer(config *config.Config, cache *cache.Cache) {
@@ -119,12 +119,12 @@ func resendRequest(request, addr string) string {
 		return string("-Can not connect to destination Node\r\n")
 	}
 	reply := make([]byte, sendBufferSize)
-	_, err = conn.Read(reply)
+	length, err := conn.Read(reply)
 	if err != nil {
 		logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
 		return string("-Can not connect to destination Node\r\n")
 	}
-	return string(reply)
+	return string(reply[0:length])
 }
 
 func ClusterConnected(cache *cache.Cache) bool {

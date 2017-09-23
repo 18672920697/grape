@@ -3,8 +3,8 @@ package cache
 import (
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
-	"github.com/leviathan1995/grape/protocol"
 	"github.com/leviathan1995/grape/logger"
+	"github.com/leviathan1995/grape/protocol"
 
 	"bytes"
 	"fmt"
@@ -14,7 +14,7 @@ import (
 )
 
 type Cache struct {
-	shards     []*cacheShard
+	shards      []*cacheShard
 	Config      *config.Config
 	consistency *consistent.Consistent
 	RouteTable  *map[string]bool
@@ -35,9 +35,9 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 		RouteTable:  &route,
 	}
 
-  for i := 0; i < config.Shards; i++ {
-    cache.shards[i]  = NewShard()
-  }
+	for i := 0; i < config.Shards; i++ {
+		cache.shards[i] = NewShard()
+	}
 	return cache
 }
 
@@ -63,9 +63,9 @@ func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, s
 		return cache.HandlePing(data.Args)
 	case "INFO":
 		return cache.HandleInfo(data.Args)
-	case "JOIN":	// Add node to cluster
+	case "JOIN": // Add node to cluster
 		return cache.HandleJoin(data.Args)
-	case "REMOVE":	// Remove node from cluster
+	case "REMOVE": // Remove node from cluster
 		return cache.HandleRemove(data.Args)
 	default:
 		return protocol.ProtocolNotSupport, ""
@@ -80,9 +80,9 @@ func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
 	}
 	value := args[2]
 
-	cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)].Lock()
-	defer cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)].Unlock()
-	(*cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)]).dataMap[key] = value
+	cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].Lock()
+	defer cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].Unlock()
+	(*cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)]).dataMap[key] = value
 
 	resp := fmt.Sprintf("+OK\r\n")
 	return protocol.RequestFinish, resp
@@ -95,9 +95,9 @@ func (cache *Cache) HandleGet(args []string) (protocol.Status, string) {
 		return protocol.ProtocolOtherNode, server
 	}
 
-	cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)].RLock()
-	defer cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)].RUnlock()
-	if value, ok := (*cache.shards[int(cache.consistency.HashKey(key)) % len(cache.shards)]).dataMap[key]; ok {
+	cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].RLock()
+	defer cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].RUnlock()
+	if value, ok := (*cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)]).dataMap[key]; ok {
 		resp := fmt.Sprintf("$%d\r\n%s\r\n", len(value), value)
 		return protocol.RequestFinish, resp
 	} else {
