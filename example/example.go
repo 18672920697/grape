@@ -1,4 +1,4 @@
-package example
+package main
 
 import (
 	"fmt"
@@ -21,5 +21,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Print("key", val)
+	fmt.Println("key:", val)
 }

@@ -51,6 +51,10 @@ func (cache *Cache) CheckKey(key string) (bool, string) {
 	}
 }
 
+func (cache *Cache) hashShard(key string) int {
+	return int(cache.consistency.HashKey(key)) % len(cache.shards)
+}
+
 func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, string) {
 	switch strings.ToUpper(data.Args[0]) {
 	case "COMMAND":
@@ -80,9 +84,9 @@ func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
 	}
 	value := args[2]
 
-	cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].Lock()
-	defer cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].Unlock()
-	(*cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)]).dataMap[key] = value
+	cache.shards[cache.hashShard(key)].Lock()
+	defer cache.shards[cache.hashShard(key)].Unlock()
+	(*cache.shards[cache.hashShard(key)]).dataMap[key] = value
 
 	resp := fmt.Sprintf("+OK\r\n")
 	return protocol.RequestFinish, resp
@@ -95,9 +99,9 @@ func (cache *Cache) HandleGet(args []string) (protocol.Status, string) {
 		return protocol.ProtocolOtherNode, server
 	}
 
-	cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].RLock()
-	defer cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)].RUnlock()
-	if value, ok := (*cache.shards[int(cache.consistency.HashKey(key))%len(cache.shards)]).dataMap[key]; ok {
+	cache.shards[cache.hashShard(key)].RLock()
+	defer cache.shards[cache.hashShard(key)].RUnlock()
+	if value, ok := (*cache.shards[cache.hashShard(key)]).dataMap[key]; ok {
 		resp := fmt.Sprintf("$%d\r\n%s\r\n", len(value), value)
 		return protocol.RequestFinish, resp
 	} else {
