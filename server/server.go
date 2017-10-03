@@ -24,34 +24,38 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 	}
 	defer listen.Close()
 
-	monitorStart := make(chan bool)
-	// Monitor heartbeat port
-	go MonitorHeartbeat(config, cache, monitorStart)
+	/*
+		monitorStart := make(chan bool)
+		// Monitor heartbeat port
+		go MonitorHeartbeat(config, cache, monitorStart)
 
-	select {
-	case start := <-monitorStart:
-		if start {
-			logger.Info.Printf("Heartbeat monitor start...")
+		select {
+		case start := <-monitorStart:
+			if start {
+				logger.Info.Printf("Heartbeat monitor start...")
+			}
 		}
-	}
 
-	// Check the networks of cluster
-	logger.Info.Printf("Wait for all nodes connected ")
-	for !ClusterConnected(cache) {
-		sendHeartbeat(cache)
-	}
-
-	(*cache).RLock()
-	for peer, status := range *cache.RouteTable {
-		if status {
-			logger.Info.Printf("Connecting to node %s OK", peer)
+		// Check the networks of cluster
+		logger.Info.Printf("Wait for all nodes connected ")
+		for !ClusterConnected(cache) {
+			sendHeartbeat(cache)
 		}
-	}
-	(*cache).RUnlock()
-	logger.Info.Printf("Create cluster success...")
 
-	// Send heartbeat to others at a fixed interval of time
-	go Heartbeat(config, cache)
+		(*cache).RLock()
+		for peer, status := range *cache.RouteTable {
+			if status {
+				logger.Info.Printf("Connecting to node %s OK", peer)
+			}
+		}
+		(*cache).RUnlock()
+		logger.Info.Printf("Create cluster success...")
+
+		// Send heartbeat to others at a fixed interval of time
+		go Heartbeat(config, cache)
+	*/
+
+	joinCluster(config, cache)
 
 	// Start service
 	logger.Info.Printf("Start service...")
@@ -65,6 +69,13 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 			}
 			go handleConnection(&conn, cache)
 		}
+	}
+}
+
+func joinCluster(config *config.Config, cache *cache.Cache) {
+	for _, peers := range config.RemotePeers {
+		err := cache.Chord.Join(config.Address, peers)
+		logger.Error.Print(err)
 	}
 }
 

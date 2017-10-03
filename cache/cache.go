@@ -7,6 +7,7 @@ import (
 	"github.com/leviathan1995/grape/protocol"
 
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"net"
 	"strings"
@@ -18,6 +19,7 @@ type Cache struct {
 	Config      *config.Config
 	consistency *consistent.Consistent
 	RouteTable  *map[string]bool
+	Chord       *ChordNode
 	sync.Mutex
 	sync.RWMutex
 }
@@ -28,12 +30,19 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 		route[node] = false
 	}
 
+	me := new(Finger)
+	me.id = sha256.Sum256([]byte(config.Address))
+	me.ipaddr = config.Address
+
 	cache := &Cache{
 		shards:      make([]*cacheShard, config.Shards),
 		Config:      config,
 		consistency: consistency,
 		RouteTable:  &route,
+		Chord:       Create(config.Address),
 	}
+
+	cache.Chord.fingerTable[0] = *me
 
 	for i := 0; i < config.Shards; i++ {
 		cache.shards[i] = NewShard()
@@ -43,7 +52,8 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 
 // Check this key whether store in node
 func (cache *Cache) CheckKey(key string) (bool, string) {
-	server, _ := cache.consistency.SetKey(key)
+	hashKey := sha256.Sum256([]byte(key))
+	server, _ := cache.Chord.lookup(hashKey, cache.Config.Address)
 	if server != cache.Config.Address {
 		return false, server
 	} else {

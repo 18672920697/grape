@@ -1,8 +1,8 @@
 HeartbeatInterval: 10
 
-Address: 127.0.0.1:9001
+Address: 127.0.0.1:6001
 
 RemotePeers:
-  - 127.0.0.1:9002
+  - 127.0.0.1:6002
 
 Shards: 8
