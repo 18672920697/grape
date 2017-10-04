@@ -88,10 +88,10 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 	reader := bufio.NewReader(*conn)
 
 	for {
-		_, err := reader.Read(request)
+		len, err := reader.Read(request)
 		if err != nil {
 			if err == io.EOF {
-				//(*conn).Close()
+				(*conn).Close()
 				return
 			}
 		}
@@ -106,7 +106,7 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		case protocol.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		case protocol.ProtocolOtherNode:
-			resp = resendRequest(string(request), resp)
+			resp = resendRequest(string(request[:len]), resp)
 			(*conn).Write([]byte(resp))
 		}
 	}

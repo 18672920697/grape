@@ -169,7 +169,6 @@ func (node *ChordNode) listen(addr string) {
 
 	logger.Info.Println("Chord node is listening...")
 	go func() {
-		defer listener.Close()
 		for {
 			if conn, err := listener.AcceptTCP(); err == nil {
 				err = conn.SetDeadline(time.Now().Add(3 * time.Minute))

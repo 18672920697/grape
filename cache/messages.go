@@ -3,6 +3,7 @@ package cache
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/leviathan1995/grape/logger"
 	"github.com/leviathan1995/grape/protobuf"
 	"log"
 )
@@ -271,9 +272,8 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 	msg := new(chordMsgs.NetworkMessage)
 
 	err := proto.Unmarshal(data, msg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh in network parse message of node %s\n", node.ipaddr)
+		logger.Error.Printf("%s,%s ", err.Error(), node.ipaddr)
 		return
 	}
 
@@ -288,9 +288,8 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (1) in chord parse message of node %s\n", node.ipaddr)
+		logger.Error.Printf("%s,%s ", err.Error(), node.ipaddr)
 		return
 	}
 
@@ -326,7 +325,10 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 	case cmd == chordMsgs.ChordMessage_Command_value["ClaimPred"]:
 		//extract finger
 		newPred, err := parseFinger(data)
-		checkError(err)
+		if err != nil {
+			logger.Error.Printf("%s", err.Error())
+			return
+		}
 		if err != nil {
 			c <- nullMsg()
 			break
@@ -368,9 +370,8 @@ func parseFingers(data []byte) (ft []Finger, err error) {
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (2) in chord parse message.\n")
+		logger.Error.Printf("%s", err.Error())
 		return
 	}
 	if chordmsg == nil {
@@ -394,9 +395,8 @@ func parseFingers(data []byte) (ft []Finger, err error) {
 func parseFinger(data []byte) (f Finger, err error) {
 	msg := new(chordMsgs.NetworkMessage)
 	err = proto.Unmarshal(data, msg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (3) in network parse message.\n")
+		logger.Error.Printf("%s", err.Error())
 		return
 	}
 
@@ -407,14 +407,16 @@ func parseFinger(data []byte) (f Finger, err error) {
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (3) in chord parse message.\n")
+		logger.Error.Printf("%s", err.Error())
 		return
 	}
 
 	cpmsg := chordmsg.GetCpmsg()
 	finger := cpmsg.GetPred()
+	if finger == nil {
+		return
+	}
 	copy(f.id[:], []byte(*finger.Id))
 	f.ipaddr = *finger.Address
 
@@ -432,9 +434,8 @@ func parseId(data []byte) (id [32]byte, err error) {
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (4) in chord parse message.\n")
+		logger.Error.Printf("%s", err.Error())
 		return
 	}
 
@@ -452,8 +453,8 @@ func parsePong(data []byte) (success bool, err error) {
 
 	msg := new(chordMsgs.NetworkMessage)
 	err = proto.Unmarshal(data, msg)
-	checkError(err)
 	if err != nil {
+		logger.Error.Printf("%s", err.Error())
 		return false, err
 	}
 
@@ -466,9 +467,8 @@ func parsePong(data []byte) (success bool, err error) {
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
-	checkError(err)
 	if err != nil {
-		fmt.Printf("Uh oh (5) in chord parse message.\n")
+		logger.Error.Printf("%s", err.Error())
 		return
 	}
 
