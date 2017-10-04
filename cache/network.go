@@ -39,7 +39,9 @@ func Send(msg []byte, addr string) (reply []byte, err error) {
 		return
 	}
 	conn := *newconn
-	checkError(err)
+	if err != nil {
+		logger.Error.Printf("%s\n", err.Error())
+	}
 	if err != nil {
 		return
 	}
@@ -90,7 +92,9 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 			return
 		}
 		err = newconn.SetDeadline(time.Now().Add(3 * time.Minute))
-		checkError(err)
+		if err != nil {
+			logger.Error.Printf("%s\n", err.Error())
+		}
 		conn = *newconn
 		node.connections[addr] = conn
 		//fmt.Printf("node %s has %d connections.\n", node.ipaddr, len(node.connections))
@@ -118,7 +122,9 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 			return
 		}
 		err = newconn.SetDeadline(time.Now().Add(3 * time.Minute))
-		checkError(err)
+		if err != nil {
+			logger.Error.Printf("%s\n", err.Error())
+		}
 		conn = *newconn
 		_, err = conn.Write(msg)
 		if err != nil {
@@ -157,7 +163,9 @@ func (node *ChordNode) listen(addr string) {
 	port, _ := strconv.Atoi(strings.Split(addr, ":")[1])
 	laddr.Port = port + 1000
 	listener, err := net.ListenTCP("tcp", laddr)
-	checkError(err)
+	if err != nil {
+		logger.Error.Printf("%s\n", err.Error())
+	}
 
 	logger.Info.Println("Chord node is listening...")
 	go func() {
@@ -165,10 +173,14 @@ func (node *ChordNode) listen(addr string) {
 		for {
 			if conn, err := listener.AcceptTCP(); err == nil {
 				err = conn.SetDeadline(time.Now().Add(3 * time.Minute))
-				checkError(err)
+				if err != nil {
+					logger.Error.Printf("%s\n", err.Error())
+				}
 				go handleMessage(conn, c, c2)
 			} else {
-				checkError(err)
+				if err != nil {
+					logger.Error.Printf("%s\n", err.Error())
+				}
 				continue
 			}
 		}
@@ -192,8 +204,7 @@ func handleMessage(conn net.Conn, c chan []byte, c2 chan []byte) {
 			return
 		}
 		if err != nil {
-			//fmt.Printf("Uh oh in handle message.\n")
-			//checkError(err)
+			logger.Error.Printf("%s\n", err.Error())
 			return
 		}
 
@@ -206,7 +217,9 @@ func handleMessage(conn net.Conn, c chan []byte, c2 chan []byte) {
 		n, err = conn.Write(response)
 		if err != nil {
 			fmt.Printf("Uh oh (3).. ")
-			checkError(err)
+			if err != nil {
+				logger.Error.Printf("%s\n", err.Error())
+			}
 			return
 		}
 		if n > 100000 {

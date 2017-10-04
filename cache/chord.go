@@ -3,9 +3,9 @@ package cache
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/leviathan1995/grape/logger"
 	"math/big"
 	"net"
-	"os"
 )
 
 //	Finger type denoting identifying information about a ChordNode
@@ -52,7 +52,7 @@ func (e *PeerError) Error() string {
 //error checking function
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		logger.Error.Printf("%s\n", err.Error())
 	}
 }
 
@@ -488,11 +488,13 @@ func (node *ChordNode) fix(which int) {
 	copy(targetId[:sha256.Size], target(node.id, which)[:sha256.Size])
 	newip, err := node.lookup(targetId, successor.ipaddr)
 	if err != nil { //node failed: TODO make more robust
-		checkError(err)
+		logger.Error.Printf("%s\n", err.Error())
 		return
 	}
 	if newip == node.ipaddr {
-		checkError(err)
+		if err != nil {
+			logger.Error.Printf("%s\n", err.Error())
+		}
 		return
 	}
 
@@ -500,7 +502,7 @@ func (node *ChordNode) fix(which int) {
 	msg := getidMsg()
 	reply, err := node.send(msg, newip)
 	if err != nil {
-		checkError(err)
+		logger.Error.Printf("%s\n", err.Error())
 		return
 	}
 
