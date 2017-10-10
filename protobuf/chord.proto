@@ -38,6 +38,6 @@ message ChordMessage {
 }
 
 message NetworkMessage {
-	required uint32 proto = 1;
+	optional uint32 proto = 1;
 	optional string msg = 2;
 }
