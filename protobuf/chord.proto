@@ -1,18 +1,18 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package chordMsgs;
 
 message SendIdMessage {
-	required string id = 1;
+	string id = 1;
 }
 
 message FingerMessage {
-	required string address = 1;
-	required string id = 2;
+	string address = 1;
+	string id = 2;
 }
 
 message PredMessage {
-	required FingerMessage pred = 1;
+	FingerMessage pred = 1;
 }
 
 message SendFingersMessage {
@@ -21,23 +21,23 @@ message SendFingersMessage {
 
 
 message ChordMessage {
-	required Command cmd = 1;
-	optional PredMessage cpmsg = 2;
-	optional SendIdMessage sidmsg = 4;
-	optional SendFingersMessage sfmsg = 5;
+	Command cmd = 1;
+	PredMessage cpmsg = 2;
+	SendIdMessage sidmsg = 4;
+	SendFingersMessage sfmsg = 5;
 
 	enum Command {
-		Ping = 1;
-		Pong = 2;
-		GetPred = 3;
-		GetId = 4;
-		GetFingers = 5;
-		ClaimPred = 6;
-		GetSucc = 7;
+		Ping = 0;
+		Pong = 1;
+		GetPred = 2;
+		GetId = 3;
+		GetFingers = 4;
+		ClaimPred = 5;
+		GetSucc = 6;
 	};
 }
 
 message NetworkMessage {
-	optional uint32 proto = 1;
-	optional string msg = 2;
+	uint32 proto = 1;
+	string msg = 2;
 }
