@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 const (
@@ -106,30 +107,70 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		case protocol.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		case protocol.ProtocolOtherNode:
-			resp = resendRequest(string(request[:len]), resp)
+			resp = resendRequest(string(request[:len]), resp, cache)
 			(*conn).Write([]byte(resp))
 		}
 	}
 }
 
 // The server could not response the client's request, maybe need to send to other servers
-func resendRequest(request, addr string) string {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		logger.Error.Printf("ResolveTCPAddr failed: %s", err.Error())
-		return string("-Can not connect to destination Node\r\n")
-	}
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		logger.Error.Printf("Dial failed: %s", err.Error())
-		return string("-Can not connect to destination Node\r\n")
-	}
-	defer conn.Close()
+func resendRequest(request, addr string, cache *cache.Cache) string {
+	conn, ok := cache.Connections[addr]
+	if !ok {
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			logger.Error.Printf("ResolveTCPAddr failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		conn, err := net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			logger.Error.Printf("Dial failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		conn.SetDeadline(time.Now().Add(3 * time.Minute))
+		cache.Connections[addr] = *conn
 
-	_, err = conn.Write([]byte(request))
+		_, err = conn.Write([]byte(request))
+		if err != nil {
+			logger.Error.Printf("Write to the peer-server failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		reply := make([]byte, sendBufferSize)
+		length, err := conn.Read(reply)
+		if err != nil {
+			logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		return string(reply[0:length])
+	}
+
+	_, err := conn.Write([]byte(request))
 	if err != nil {
-		logger.Error.Printf("Write to the peer-server failed: %s", err.Error())
-		return string("-Can not connect to destination Node\r\n")
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			logger.Error.Printf("ResolveTCPAddr failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		conn, err := net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			logger.Error.Printf("Dial failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		conn.SetDeadline(time.Now().Add(3 * time.Minute))
+		cache.Connections[addr] = *conn
+
+		_, err = conn.Write([]byte(request))
+		if err != nil {
+			logger.Error.Printf("Write to the peer-server failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		reply := make([]byte, sendBufferSize)
+		length, err := conn.Read(reply)
+		if err != nil {
+			logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
+			return string("-Can not connect to destination Node\r\n")
+		}
+		return string(reply[0:length])
 	}
 	reply := make([]byte, sendBufferSize)
 	length, err := conn.Read(reply)

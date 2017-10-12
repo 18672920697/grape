@@ -19,6 +19,7 @@ type Cache struct {
 	Config      *config.Config
 	consistency *consistent.Consistent
 	RouteTable  *map[string]bool
+	Connections map[string]net.TCPConn
 	Chord       *ChordNode
 	sync.Mutex
 	sync.RWMutex
@@ -39,6 +40,7 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 		Config:      config,
 		consistency: consistency,
 		RouteTable:  &route,
+		Connections: make(map[string]net.TCPConn),
 		Chord:       Create(config.Address),
 	}
 
