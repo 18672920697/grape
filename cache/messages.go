@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/leviathan1995/grape/logger"
-	"github.com/leviathan1995/grape/protobuf"
+	"github.com/leviathan1995/grape/proto"
 	"log"
 )
 

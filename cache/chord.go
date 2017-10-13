@@ -6,6 +6,7 @@ import (
 	"github.com/leviathan1995/grape/logger"
 	"math/big"
 	"net"
+	"time"
 )
 
 //	Finger type denoting identifying information about a ChordNode
@@ -27,8 +28,10 @@ type ChordNode struct {
 	successorList [sha256.Size * 8]Finger
 	fingerTable   [sha256.Size*8 + 1]Finger
 
-	finger  chan Finger
-	request chan request
+	finger       chan Finger
+	request      chan request
+	listenFinish chan bool
+	infoFinish   chan bool
 
 	id     [sha256.Size]byte
 	ipaddr string
@@ -47,13 +50,6 @@ type PeerError struct {
 
 func (e *PeerError) Error() string {
 	return fmt.Sprintf("Failed to connect to peer: %s. Cause of failure: %s.", e.Address, e.Err)
-}
-
-//error checking function
-func checkError(err error) {
-	if err != nil {
-		logger.Error.Printf("%s\n", err.Error())
-	}
 }
 
 //	Lookup returns the address of the successor of key in the Chord DHT.
@@ -245,31 +241,35 @@ func Create(myaddr string) *ChordNode {
 	c2 := make(chan request)
 	node.finger = c
 	node.request = c2
+	node.listenFinish = make(chan bool)
+	node.infoFinish = make(chan bool)
 
 	//initialize listener and network manager threads
 	go node.listen(myaddr)
+	<-node.listenFinish
 	node.connections = make(map[string]net.TCPConn)
 	node.applications = make(map[byte]ChordApp)
 
 	//initialize maintenance and finger manager threads
 	go node.data()
 	go node.maintain()
+	<-node.infoFinish
+
 	return node
 }
 
 //	Join will add a new ChordNode to an existing DHT. It looks up the successor
-//	of the new node starting at an existing Chord node specified by addr. Join
-//	returns the new ChordNode when completed.
+//	of the new node starting at an existing Chord node specified by addr.
 //
 //	If the start address is unreachable, the error is of type PeerError.
-func (chord *ChordNode) Join(localAddr string, peerAddr string) error {
+func (node *ChordNode) Join(localAddr string, peerAddr string) error {
 	newId := sha256.Sum256([]byte(localAddr))
 	successor, err := Lookup(newId, peerAddr)
 	if err != nil || successor == "" {
 		return &PeerError{peerAddr, err}
 	}
 
-	//	find id of node
+	//	find the id of node
 	msg := getidMsg()
 	reply, err := Send(msg, successor)
 	if err != nil {
@@ -283,7 +283,14 @@ func (chord *ChordNode) Join(localAddr string, peerAddr string) error {
 		return &PeerError{peerAddr, err}
 	}
 	succ.ipaddr = successor
-	chord.query(true, false, 1, succ)
+
+	node.successor = succ
+	node.fingerTable[1] = *succ
+	node.successorList[0] = *succ
+
+	node.stabilize()
+	node.fixFinger()
+
 	return nil
 }
 
@@ -335,25 +342,24 @@ func (node *ChordNode) query(write bool, succ bool, index int, newf *Finger) Fin
 
 //maintain will periodically perform maintenance operations
 func (node *ChordNode) maintain() {
-	ctr := 0
 	for {
-		//time.Sleep(time.Duration(rand.Uint32()%3)*time.Minute + time.Duration(rand.Uint32()%60)*time.Second + time.Duration(rand.Uint32()%60)*time.Millisecond)
+		time.Sleep(1 * time.Duration(time.Microsecond))
 		//stabilize
 		node.stabilize()
 		//check predecessor
 		node.checkPred()
 		//update fingers
-		node.fix(ctr)
-		ctr = ctr % 256
-		ctr += 1
+		node.fixFinger()
+		node.infoFinish <- true
 	}
 }
 
 //stablize ensures that the node's successor's predecessor is itself
 //If not, it updates its successor's predecessor.
 func (node *ChordNode) stabilize() {
-	successor := node.query(false, false, 1, nil)
-
+	//successor := node.query(false, false, 1, nil)
+	successor := node.fingerTable[1]
+	//log.Printf("stabilize: %s", successor.ipaddr)
 	if successor.zero() {
 		return
 	}
@@ -365,7 +371,8 @@ func (node *ChordNode) stabilize() {
 		//successor failed to respond
 		//check in successor list for next available successor.
 		for i := 1; i < sha256.Size*8; i++ {
-			successor = node.query(false, true, i, nil)
+			//successor = node.query(false, true, i, nil)
+			successor = node.successorList[i]
 			if successor.ipaddr == node.ipaddr {
 				continue
 			}
@@ -377,7 +384,10 @@ func (node *ChordNode) stabilize() {
 				successor.ipaddr = ""
 			}
 		}
-		node.query(true, false, 1, &successor)
+		//node.query(true, false, 1, &successor)
+		node.successor = &successor
+		node.fingerTable[1] = successor
+		node.successorList[0] = successor
 		if successor.ipaddr == "" {
 			return
 		}
@@ -395,7 +405,8 @@ func (node *ChordNode) stabilize() {
 	}
 	for i := range ft {
 		if i < sha256.Size*8-1 {
-			node.query(true, true, i+1, &ft[i])
+			//node.query(true, true, i+1, &ft[i])
+			node.successorList[i+1] = ft[i]
 		}
 	}
 
@@ -413,7 +424,10 @@ func (node *ChordNode) stabilize() {
 	if predOfSucc.ipaddr != "" {
 		if predOfSucc.id != node.id {
 			if InRange(predOfSucc.id, node.id, successor.id) {
-				node.query(true, false, 1, &predOfSucc)
+				//node.query(true, false, 1, &predOfSucc)
+				node.successor = &predOfSucc
+				node.fingerTable[1] = predOfSucc
+				node.successorList[0] = predOfSucc
 			}
 		} else { //everything is fine
 			return
@@ -426,7 +440,6 @@ func (node *ChordNode) stabilize() {
 	me.ipaddr = node.ipaddr
 	msg = claimpredMsg(*me)
 	node.send(msg, successor.ipaddr)
-
 }
 
 //Register allows chord applications to register themselves and receive notifications
@@ -445,12 +458,19 @@ func (node *ChordNode) Register(id byte, app ChordApp) bool {
 }
 
 func (node *ChordNode) notify(newPred Finger) {
-	node.query(true, false, -1, &newPred)
+	//node.query(true, false, -1, &newPred)
+	node.predecessor = &newPred
 	//update predecessor
-	successor := node.query(false, false, 1, nil)
+	//successor := node.query(false, false, 1, nil)
+	successor := node.fingerTable[1]
 	if successor.zero() { //TODO: so if you get here, you were probably the first node.
-		node.query(true, false, 1, &newPred)
+		//node.query(true, false, 1, &newPred)
+		node.successor = &newPred
+		node.fingerTable[1] = newPred
+		node.successorList[0] = newPred
 	}
+	node.stabilize()
+	node.fixFinger()
 	//notify applications
 	for _, app := range node.applications {
 		app.Notify(newPred.id, node.id, newPred.ipaddr)
@@ -458,7 +478,8 @@ func (node *ChordNode) notify(newPred Finger) {
 }
 
 func (node *ChordNode) checkPred() {
-	predecessor := node.query(false, false, -1, nil)
+	//predecessor := node.query(false, false, -1, nil)
+	predecessor := *node.predecessor
 	if predecessor.zero() {
 		return
 	}
@@ -467,50 +488,60 @@ func (node *ChordNode) checkPred() {
 	reply, err := node.send(msg, predecessor.ipaddr)
 	if err != nil {
 		predecessor.ipaddr = ""
-		node.query(true, false, -1, &predecessor)
+		//node.query(true, false, -1, &predecessor)
+		node.predecessor = &predecessor
 	}
 
 	if success, err := parsePong(reply); !success || err != nil {
 		predecessor.ipaddr = ""
-		node.query(true, false, -1, &predecessor)
+		//node.query(true, false, -1, &predecessor)
+		node.predecessor = &predecessor
 	}
 
 	return
 
 }
 
-func (node *ChordNode) fix(which int) {
-	successor := node.query(false, false, 1, nil)
-	if which == 0 || which == 1 || successor.zero() {
-		return
-	}
-	var targetId [sha256.Size]byte
-	copy(targetId[:sha256.Size], target(node.id, which)[:sha256.Size])
-	newip, err := node.lookup(targetId, successor.ipaddr)
-	if err != nil { //node failed: TODO make more robust
-		logger.Error.Printf("%s\n", err.Error())
-		return
-	}
-	if newip == node.ipaddr {
+func (node *ChordNode) fixFinger() {
+	for which := 0; which < 257; which++ {
+		successor := node.fingerTable[1]
+		if which == 0 || which == 1 || successor.zero() {
+			continue
+		}
+		var targetId [sha256.Size]byte
+		copy(targetId[:sha256.Size], target(node.id, which)[:sha256.Size])
+		newip, err := node.lookup(targetId, successor.ipaddr)
+		if err != nil { //node failed: TODO make more robust
+			logger.Error.Printf("%s\n", err.Error())
+			continue
+		}
+		if newip == node.ipaddr {
+			if err != nil {
+				logger.Error.Printf("%s\n", err.Error())
+			}
+			continue
+		}
+
+		//find id of node
+		msg := getidMsg()
+		reply, err := node.send(msg, newip)
 		if err != nil {
 			logger.Error.Printf("%s\n", err.Error())
+			continue
 		}
-		return
+
+		newfinger := new(Finger)
+		newfinger.ipaddr = newip
+		newfinger.id, _ = parseId(reply)
+		//node.query(true, false, which, newfinger)
+		if which == 1 {
+			node.successor = newfinger
+			node.fingerTable[1] = *newfinger
+			node.successorList[0] = *newfinger
+		} else {
+			node.fingerTable[which] = *newfinger
+		}
 	}
-
-	//find id of node
-	msg := getidMsg()
-	reply, err := node.send(msg, newip)
-	if err != nil {
-		logger.Error.Printf("%s\n", err.Error())
-		return
-	}
-
-	newfinger := new(Finger)
-	newfinger.ipaddr = newip
-	newfinger.id, _ = parseId(reply)
-	node.query(true, false, which, newfinger)
-
 }
 
 //Finalize stops all communication and removes the ChordNode from the DHT.

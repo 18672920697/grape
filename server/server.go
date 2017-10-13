@@ -6,6 +6,7 @@ import (
 	"github.com/leviathan1995/grape/logger"
 	"github.com/leviathan1995/grape/protocol"
 
+	//"bufio"
 	"bufio"
 	"fmt"
 	"io"
@@ -87,7 +88,6 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 	defer (*conn).Close()
 
 	reader := bufio.NewReader(*conn)
-
 	for {
 		len, err := reader.Read(request)
 		if err != nil {
@@ -127,7 +127,7 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 			logger.Error.Printf("Dial failed: %s", err.Error())
 			return string("-Can not connect to destination Node\r\n")
 		}
-		conn.SetDeadline(time.Now().Add(3 * time.Minute))
+		conn.SetDeadline(time.Now().Add(1 * time.Minute))
 		cache.Connections[addr] = *conn
 
 		_, err = conn.Write([]byte(request))
@@ -135,13 +135,14 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 			logger.Error.Printf("Write to the peer-server failed: %s", err.Error())
 			return string("-Can not connect to destination Node\r\n")
 		}
+		reader := bufio.NewReader(conn)
 		reply := make([]byte, sendBufferSize)
-		length, err := conn.Read(reply)
+		len, err := reader.Read(reply)
 		if err != nil {
 			logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
 			return string("-Can not connect to destination Node\r\n")
 		}
-		return string(reply[0:length])
+		return string(reply[0:len])
 	}
 
 	_, err := conn.Write([]byte(request))
@@ -156,7 +157,7 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 			logger.Error.Printf("Dial failed: %s", err.Error())
 			return string("-Can not connect to destination Node\r\n")
 		}
-		conn.SetDeadline(time.Now().Add(3 * time.Minute))
+		conn.SetDeadline(time.Now().Add(1 * time.Minute))
 		cache.Connections[addr] = *conn
 
 		_, err = conn.Write([]byte(request))
@@ -172,13 +173,14 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 		}
 		return string(reply[0:length])
 	}
+	reader := bufio.NewReader(&conn)
 	reply := make([]byte, sendBufferSize)
-	length, err := conn.Read(reply)
+	len, err := reader.Read(reply)
 	if err != nil {
 		logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
 		return string("-Can not connect to destination Node\r\n")
 	}
-	return string(reply[0:length])
+	return string(reply[0:len])
 }
 
 func ClusterConnected(cache *cache.Cache) bool {

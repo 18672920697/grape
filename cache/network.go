@@ -166,8 +166,8 @@ func (node *ChordNode) listen(addr string) {
 	if err != nil {
 		logger.Error.Printf("%s\n", err.Error())
 	}
-
-	logger.Info.Println("Chord node is listening...")
+	node.listenFinish <- true
+	//logger.Info.Println("Chord node is listening...")
 	go func() {
 		for {
 			if conn, err := listener.AcceptTCP(); err == nil {
