@@ -27,7 +27,7 @@ func TestForwardRequest(t *testing.T) {
 
 	req := "*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\nval\r\n"
 	for i := 0; i < 10000; i++ {
-		reply := ForwardRequest(req, "127.0.0.1:6002", cache)
+		reply := ForwardRequest(req, "127.0.0.1:6001", cache)
 		if reply != "+OK\r\n" {
 			t.Errorf(reply)
 		}
