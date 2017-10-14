@@ -24,24 +24,24 @@ func main() {
 
 	logger.Info.Printf("Grape is starting")
 
-	var conf string
+	var confFile string
 	logger.Info.Printf("================Config================")
-	flag.StringVar(&conf, "c", "config.yaml", "config file")
+	flag.StringVar(&confFile, "c", "config.yaml", "config file")
 	flag.Parse()
-	logger.Info.Printf("use %s as the config file", conf)
-	config := config.LoadConfig(conf)
-	printConf(*config)
+	logger.Info.Printf("use %s as the config file", confFile)
+	conf := config.LoadConfig(confFile)
+	printConf(*conf)
 	logger.Info.Printf("======================================")
 
 	consistency := consistent.New()
 
 	// Add node to consistency process
-	consistency.AddNode(config.Address)
-	for _, peer := range config.RemotePeers {
+	consistency.AddNode(conf.Address)
+	for _, peer := range conf.RemotePeers {
 		consistency.AddNode(peer)
 	}
 
-	cache := cache.NewCache(config, consistency)
+	cacheStore := cache.NewCache(conf, consistency)
 
-	server.StartServer(config, cache)
+	server.StartServer(conf, cacheStore)
 }
