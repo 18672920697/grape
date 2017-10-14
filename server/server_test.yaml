@@ -1,0 +1,8 @@
+HeartbeatInterval: 10
+
+Address: 127.0.0.1:6003
+
+RemotePeers:
+ - 127.0.0.1:6001
+
+Shards: 8

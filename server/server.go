@@ -106,14 +106,14 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 		case protocol.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		case protocol.ProtocolOtherNode:
-			resp = resendRequest(string(request[:len]), resp, cache)
+			resp = ForwardRequest(string(request[:len]), resp, cache)
 			(*conn).Write([]byte(resp))
 		}
 	}
 }
 
 // The server could not response the client's request, maybe need to send to other servers
-func resendRequest(request, addr string, cache *cache.Cache) string {
+func ForwardRequest(request, addr string, cache *cache.Cache) string {
 	conn, ok := cache.Connections[addr]
 	if !ok {
 		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -136,12 +136,12 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 		}
 		reader := bufio.NewReader(conn)
 		reply := make([]byte, sendBufferSize)
-		len, err := reader.Read(reply)
+		length, err := reader.Read(reply)
 		if err != nil {
 			logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
 			return string("-Can not connect to destination Node\r\n")
 		}
-		return string(reply[0:len])
+		return string(reply[0:length])
 	}
 
 	_, err := conn.Write([]byte(request))
@@ -174,12 +174,12 @@ func resendRequest(request, addr string, cache *cache.Cache) string {
 	}
 	reader := bufio.NewReader(&conn)
 	reply := make([]byte, sendBufferSize)
-	len, err := reader.Read(reply)
+	length, err := reader.Read(reply)
 	if err != nil {
 		logger.Error.Printf("Read from the peer-server failed: %s", err.Error())
 		return string("-Can not connect to destination Node\r\n")
 	}
-	return string(reply[0:len])
+	return string(reply[0:length])
 }
 
 func ClusterConnected(cache *cache.Cache) bool {
