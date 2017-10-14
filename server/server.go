@@ -85,7 +85,6 @@ func joinCluster(config *config.Config, cache *cache.Cache) {
 
 func handleConnection(conn *net.Conn, cache *cache.Cache) {
 	request := make([]byte, receiveBufferSize)
-	defer (*conn).Close()
 
 	reader := bufio.NewReader(*conn)
 	for {
