@@ -9,7 +9,7 @@ import (
 )
 
 //lookupMsg constructs a message to perform the lookup of a key and returns the
-//marshalled protocol buffer
+//marshalled redis buffer
 func getfingersMsg() []byte {
 
 	msg := new(chordMsgs.NetworkMessage)
@@ -43,7 +43,7 @@ func sendfingersMsg(fingers []Finger) []byte {
 		if !finger.zero() {
 			fingerMsg := new(chordMsgs.FingerMessage)
 			fingerMsg.Id = *proto.String(string(finger.id[:32]))
-			fingerMsg.Address = *proto.String(finger.ipaddr)
+			fingerMsg.Address = *proto.String(finger.ipAddr)
 			sfMsg.Fingers = append(sfMsg.Fingers, fingerMsg)
 		}
 	}
@@ -141,7 +141,7 @@ func sendpredMsg(finger Finger) []byte {
 	pMsg := new(chordMsgs.PredMessage)
 	fingerMsg := new(chordMsgs.FingerMessage)
 	fingerMsg.Id = *proto.String(string(finger.id[:32]))
-	fingerMsg.Address = *proto.String(finger.ipaddr)
+	fingerMsg.Address = *proto.String(finger.ipAddr)
 	pMsg.Pred = fingerMsg
 	chordMsg.Cpmsg = pMsg
 
@@ -169,7 +169,7 @@ func claimpredMsg(finger Finger) []byte {
 	predMsg := new(chordMsgs.PredMessage)
 	fingerMsg := new(chordMsgs.FingerMessage)
 	fingerMsg.Id = *proto.String(string(finger.id[:32]))
-	fingerMsg.Address = *proto.String(finger.ipaddr)
+	fingerMsg.Address = *proto.String(finger.ipAddr)
 	predMsg.Pred = fingerMsg
 	chordMsg.Cpmsg = predMsg
 
@@ -265,7 +265,7 @@ func nullMsg() []byte {
 	return data
 }
 
-//parseMessage takes as input an unmarshalled protocol buffer and
+//parseMessage takes as input an unmarshalled redis buffer and
 //performs actions based on what the message contains.
 func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 
@@ -273,23 +273,25 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 
 	err := proto.Unmarshal(data, msg)
 	if err != nil {
-		logger.Error.Printf("%s,%s ", err.Error(), node.ipaddr)
+		logger.Error.Printf("%s,%s ", err.Error(), node.ipAddr)
 		return
 	}
 
 	protocol := msg.GetProto()
 	if protocol != 1 {
+		/*
 		if app, ok := node.applications[byte(protocol)]; ok {
 			c <- app.Message([]byte(msg.GetMsg()))
 		}
 		return
+		*/
 	}
 
 	chorddata := []byte(msg.GetMsg())
 	chordmsg := new(chordMsgs.ChordMessage)
 	err = proto.Unmarshal(chorddata, chordmsg)
 	if err != nil {
-		logger.Error.Printf("%s,%s ", err.Error(), node.ipaddr)
+		logger.Error.Printf("%s,%s ", err.Error(), node.ipAddr)
 		return
 	}
 
@@ -299,12 +301,11 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 		c <- pongMsg()
 		return
 	case cmd == chordMsgs.ChordMessage_Command_value["GetPred"]:
-		node.request <- request{false, false, -1}
-		pred := <-node.finger
+		pred := *node.predecessor
 		if pred.zero() {
 			c <- nullMsg()
 		} else {
-			c <- sendpredMsg(pred) //node.predecessor)
+			c <- sendpredMsg(pred)
 		}
 		return
 	case cmd == chordMsgs.ChordMessage_Command_value["GetId"]:
@@ -337,7 +338,7 @@ func (node *ChordNode) parseMessage(data []byte, c chan []byte) {
 		pred := <-node.finger
 
 		if pred.zero() || InRange(newPred.id, pred.id, node.id) {
-			go node.notify(newPred)
+			node.notify(newPred)
 		}
 		c <- nullMsg()
 		//update finger table
@@ -383,8 +384,8 @@ func parseFingers(data []byte) (ft []Finger, err error) {
 	for _, finger := range fingers {
 		newfinger := new(Finger)
 		copy(newfinger.id[:], []byte(finger.Id))
-		newfinger.ipaddr = finger.Address
-		if !newfinger.zero() && newfinger.ipaddr != prevfinger.ipaddr {
+		newfinger.ipAddr = finger.Address
+		if !newfinger.zero() && newfinger.ipAddr != prevfinger.ipAddr {
 			ft = append(ft, *newfinger)
 		}
 		*prevfinger = *newfinger
@@ -418,7 +419,7 @@ func parseFinger(data []byte) (f Finger, err error) {
 		return
 	}
 	copy(f.id[:], []byte(finger.Id))
-	f.ipaddr = finger.Address
+	f.ipAddr = finger.Address
 
 	return
 }

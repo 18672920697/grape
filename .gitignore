@@ -5,6 +5,7 @@
 *.dylib
 grape
 example/example
+tags
 
 # Test binary, build with `go test -c`
 *.test

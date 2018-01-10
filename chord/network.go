@@ -74,7 +74,7 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 	if !ok {
 		//fmt.Printf("Connection from %s to %s didn't exist. Creating new...\n", node.ipaddr, addr)
 		laddr := new(net.TCPAddr)
-		laddr.IP = net.ParseIP(strings.Split(node.ipaddr, ":")[0])
+		laddr.IP = net.ParseIP(strings.Split(node.ipAddr, ":")[0])
 		laddr.Port = 0
 		if err != nil {
 			return
@@ -106,7 +106,7 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 		//might have timed out
 		//fmt.Printf("Connection from %s to %s is no good. Creating new...\n", node.ipaddr, addr)
 		laddr := new(net.TCPAddr)
-		laddr.IP = net.ParseIP(strings.Split(node.ipaddr, ":")[0])
+		laddr.IP = net.ParseIP(strings.Split(node.ipAddr, ":")[0])
 		laddr.Port = 0
 
 		raddr := new(net.TCPAddr)
@@ -166,8 +166,6 @@ func (node *ChordNode) listen(addr string) {
 	if err != nil {
 		logger.Error.Printf("%s\n", err.Error())
 	}
-	node.listenFinish <- true
-	//logger.Info.Println("Chord node is listening...")
 	go func() {
 		for {
 			if conn, err := listener.AcceptTCP(); err == nil {
