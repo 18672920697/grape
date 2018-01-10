@@ -4,7 +4,7 @@ import (
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
 	"github.com/leviathan1995/grape/logger"
-	"github.com/leviathan1995/grape/protocol"
+	"github.com/leviathan1995/grape/redis"
 
 	"bytes"
 	"crypto/sha256"
@@ -33,7 +33,7 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 
 	me := new(Finger)
 	me.id = sha256.Sum256([]byte(config.Address))
-	me.ipaddr = config.Address
+	me.ipAddr = config.Address
 
 	cache := &Cache{
 		shards:      make([]*cacheShard, config.Shards),
@@ -67,10 +67,10 @@ func (cache *Cache) hashShard(key string) int {
 	return int(cache.consistency.HashKey(key)) % len(cache.shards)
 }
 
-func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, string) {
+func (cache *Cache) HandleCommand(data redis.CommandData) (redis.Status, string) {
 	switch strings.ToUpper(data.Args[0]) {
 	case "COMMAND":
-		return protocol.ProtocolNotSupport, ""
+		return redis.ProtocolNotSupport, ""
 	case "SET":
 		return cache.HandleSet(data.Args)
 	case "GET":
@@ -84,15 +84,15 @@ func (cache *Cache) HandleCommand(data protocol.CommandData) (protocol.Status, s
 	case "REMOVE": // Remove node from cluster
 		return cache.HandleRemove(data.Args)
 	default:
-		return protocol.ProtocolNotSupport, ""
+		return redis.ProtocolNotSupport, ""
 	}
 }
 
-func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
+func (cache *Cache) HandleSet(args []string) (redis.Status, string) {
 	key := args[1]
 	// Check this key whether store in node
 	if store, server := cache.CheckKey(key); !store {
-		return protocol.ProtocolOtherNode, server
+		return redis.ProtocolOtherNode, server
 	}
 	value := args[2]
 
@@ -101,32 +101,32 @@ func (cache *Cache) HandleSet(args []string) (protocol.Status, string) {
 	(*cache.shards[cache.hashShard(key)]).dataMap[key] = value
 
 	resp := fmt.Sprintf("+OK\r\n")
-	return protocol.RequestFinish, resp
+	return redis.RequestFinish, resp
 }
 
-func (cache *Cache) HandleGet(args []string) (protocol.Status, string) {
+func (cache *Cache) HandleGet(args []string) (redis.Status, string) {
 	key := args[1]
 	// Check this key whether store in node
 	if store, server := cache.CheckKey(key); !store {
-		return protocol.ProtocolOtherNode, server
+		return redis.ProtocolOtherNode, server
 	}
 
 	cache.shards[cache.hashShard(key)].RLock()
 	defer cache.shards[cache.hashShard(key)].RUnlock()
 	if value, ok := (*cache.shards[cache.hashShard(key)]).dataMap[key]; ok {
 		resp := fmt.Sprintf("$%d\r\n%s\r\n", len(value), value)
-		return protocol.RequestFinish, resp
+		return redis.RequestFinish, resp
 	} else {
-		return protocol.RequestNotFound, ""
+		return redis.RequestNotFound, ""
 	}
 }
 
-func (cache *Cache) HandlePing(args []string) (protocol.Status, string) {
+func (cache *Cache) HandlePing(args []string) (redis.Status, string) {
 	resp := fmt.Sprintf("+PONG\r\n")
-	return protocol.RequestFinish, resp
+	return redis.RequestFinish, resp
 }
 
-func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
+func (cache *Cache) HandleInfo(args []string) (redis.Status, string) {
 	var resp bytes.Buffer
 
 	(*cache).RWMutex.RLock()
@@ -151,10 +151,10 @@ func (cache *Cache) HandleInfo(args []string) (protocol.Status, string) {
 	(*cache).RWMutex.RUnlock()
 
 	strResp := resp.String()
-	return protocol.RequestFinish, strResp
+	return redis.RequestFinish, strResp
 }
 
-func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
+func (cache *Cache) HandleJoin(args []string) (redis.Status, string) {
 	joinAddr := args[1]
 
 	routeResp := fmt.Sprintf("*%d\r\n$2\r\nOK\r\n", len(*cache.RouteTable)+1)
@@ -192,10 +192,10 @@ func (cache *Cache) HandleJoin(args []string) (protocol.Status, string) {
 		}
 		(*cache).RWMutex.Unlock()
 	}
-	return protocol.RequestFinish, routeResp
+	return redis.RequestFinish, routeResp
 }
 
-func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
+func (cache *Cache) HandleRemove(args []string) (redis.Status, string) {
 	removeAddr := args[1]
 
 	var routeTable []string
@@ -236,5 +236,5 @@ func (cache *Cache) HandleRemove(args []string) (protocol.Status, string) {
 		}
 		(*cache).RWMutex.Unlock()
 	}
-	return protocol.RequestFinish, "+OK\r\n"
+	return redis.RequestFinish, "+OK\r\n"
 }

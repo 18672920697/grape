@@ -4,7 +4,7 @@ import (
 	"github.com/leviathan1995/grape/cache"
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/logger"
-	"github.com/leviathan1995/grape/protocol"
+	"github.com/leviathan1995/grape/redis"
 
 	"bufio"
 	"fmt"
@@ -76,7 +76,7 @@ func sendHeartbeat(cache *cache.Cache) {
 		reader := bufio.NewReader(conn)
 
 		_, err = reader.Read(reply)
-		command, _ := protocol.Parser(string(reply))
+		command, _ := redis.Parser(string(reply))
 		if err != nil {
 			(*cache).RWMutex.Lock()
 			(*cache.RouteTable)[node] = false
@@ -110,7 +110,7 @@ func sendHeartbeat(cache *cache.Cache) {
 			reader := bufio.NewReader(joinConn)
 
 			_, err = reader.Read(joinReply)
-			command, _ := protocol.Parser(string(joinReply))
+			command, _ := redis.Parser(string(joinReply))
 			if err != nil {
 				continue
 			}
@@ -170,15 +170,15 @@ func handleHeartbeat(conn *net.Conn, cache *cache.Cache) {
 			}
 		}
 
-		command, _ := protocol.Parser(string(request))
+		command, _ := redis.Parser(string(request))
 
-		var status protocol.Status
+		var status redis.Status
 		var resp string
 		switch strings.ToUpper(command.Args[0]) {
 		case "PING":
 			status, resp = cache.HandlePing(command.Args)
 		default:
-			status, resp = protocol.ProtocolNotSupport, ""
+			status, resp = redis.ProtocolNotSupport, ""
 		}
 
 		// Check where is heartbeat coming from
@@ -193,9 +193,9 @@ func handleHeartbeat(conn *net.Conn, cache *cache.Cache) {
 		}
 
 		switch status {
-		case protocol.RequestFinish:
+		case redis.RequestFinish:
 			(*conn).Write([]byte(resp))
-		case protocol.ProtocolNotSupport:
+		case redis.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
 		}
 	}

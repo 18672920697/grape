@@ -4,7 +4,7 @@ import (
 	"github.com/leviathan1995/grape/cache"
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/logger"
-	"github.com/leviathan1995/grape/protocol"
+	"github.com/leviathan1995/grape/redis"
 
 	//"bufio"
 	"bufio"
@@ -76,7 +76,7 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 
 func joinCluster(config *config.Config, cache *cache.Cache) {
 	for _, peers := range config.RemotePeers {
-		err := cache.Chord.Join(config.Address, peers)
+		_,err := cache.Chord.Join(peers)
 		if err != nil {
 			logger.Error.Print(err)
 		}
@@ -96,16 +96,16 @@ func handleConnection(conn *net.Conn, cache *cache.Cache) {
 			}
 		}
 
-		command, _ := protocol.Parser(string(request))
+		command, _ := redis.Parser(string(request))
 		status, resp := cache.HandleCommand(command)
 		switch status {
-		case protocol.RequestFinish:
+		case redis.RequestFinish:
 			(*conn).Write([]byte(resp))
-		case protocol.RequestNotFound:
+		case redis.RequestNotFound:
 			(*conn).Write([]byte("-Not found\r\n"))
-		case protocol.ProtocolNotSupport:
+		case redis.ProtocolNotSupport:
 			(*conn).Write([]byte("-Protocol not support\r\n"))
-		case protocol.ProtocolOtherNode:
+		case redis.ProtocolOtherNode:
 			resp = ForwardRequest(string(request[:length]), resp, cache)
 			(*conn).Write([]byte(resp))
 		}
