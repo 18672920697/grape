@@ -1,4 +1,4 @@
-package cache
+package chord
 
 import (
 	"crypto/sha256"
@@ -56,9 +56,9 @@ func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 
 	addr = start
 
-	msg := getfingersMsg()
+	msg := getFingersMessage()
 	reply, err := Send(msg, start)
-	if err != nil { //node failed.
+	if err != nil {
 		err = &PeerError{start, err}
 		return
 	}
@@ -79,28 +79,28 @@ func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 		return
 	}
 
-	//loop through finger table and see what the closest finger is
+	// Loop through finger table and see what the closest finger is
 	for i := len(ft) - 1; i > 0; i-- {
 		f := ft[i]
 		if i == 0 {
 			break
 		}
-		if InRange(f.id, current.id, key) { //see if f.id is closer than I am.
+		if InRange(f.id, current.id, key) { // See if f.id is closer than I am.
 			addr, err = Lookup(key, f.ipAddr)
-			if err != nil { //node failed
+			if err != nil {
 				continue
 			}
 			return
 		}
 	}
 	addr = ft[1].ipAddr
-	msg = pingMsg()
+	msg = pingMessage()
 	reply, err = Send(msg, addr)
 
-	//this code is executed if the current node's successor has gone missing
+	// If the current node's successor has gone missing
 	if err != nil {
-		//ask node for its successor list
-		msg = getsuccessorsMsg()
+		// Ask node for its successor list
+		msg = getSuccessorsMessage()
 		reply, err = Send(msg, current.ipAddr)
 		if err != nil {
 			addr = current.ipAddr
@@ -118,9 +118,9 @@ func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 			if i == 0 {
 				break
 			}
-			msg = pingMsg()
+			msg = pingMessage()
 			reply, err = Send(msg, f.ipAddr)
-			if err != nil { //closest next successor that responds
+			if err != nil { // Closest next successor that responds
 				addr = f.ipAddr
 				return
 			}
@@ -139,9 +139,9 @@ func (node *ChordNode) lookup(key [sha256.Size]byte, start string) (addr string,
 
 	addr = start
 
-	msg := getfingersMsg()
+	msg := getFingersMessage()
 	reply, err := node.send(msg, start)
-	if err != nil { //node failed
+	if err != nil {
 		err = &PeerError{start, err}
 		return
 	}
@@ -177,13 +177,13 @@ func (node *ChordNode) lookup(key [sha256.Size]byte, start string) (addr string,
 		}
 	}
 	addr = ft[1].ipAddr
-	msg = pingMsg()
+	msg = pingMessage()
 	reply, err = node.send(msg, addr)
 
 	//this code is executed if the id's successor has gone missing
 	if err != nil {
 		//ask node for its successor list
-		msg = getsuccessorsMsg()
+		msg = getSuccessorsMessage()
 		reply, err = node.send(msg, current.ipAddr)
 		if err != nil {
 			addr = current.ipAddr
@@ -200,7 +200,7 @@ func (node *ChordNode) lookup(key [sha256.Size]byte, start string) (addr string,
 			if i == 0 {
 				break
 			}
-			msg = pingMsg()
+			msg = pingMessage()
 			reply, err = node.send(msg, f.ipAddr)
 			if err != nil { //closest next successor that responds
 				addr = f.ipAddr
@@ -266,7 +266,7 @@ func (node *ChordNode) Join(peerAddr string) (*Finger, error) {
 	}
 
 	//	find the id of successor node
-	msg := getidMsg()
+	msg := getIdMessage()
 	reply, err := Send(msg, successor)
 	if err != nil {
 		return nil, &PeerError{peerAddr, err}
@@ -360,7 +360,7 @@ func (node *ChordNode) stabilize() {
 	}
 
 	// Check to see if the successor is still around
-	msg := pingMsg()
+	msg := pingMessage()
 	reply, err := node.send(msg, successor.ipAddr)
 	if err != nil {
 		// If successor failed to respond
@@ -371,7 +371,7 @@ func (node *ChordNode) stabilize() {
 			if successor.ipAddr == node.ipAddr {
 				continue
 			}
-			msg := pingMsg()
+			msg := pingMessage()
 			reply, err = node.send(msg, successor.ipAddr)
 			if err == nil {
 				break
@@ -389,7 +389,7 @@ func (node *ChordNode) stabilize() {
 	}
 
 	// Update successor list
-	msg = getsuccessorsMsg()
+	msg = getSuccessorsMessage()
 	reply, err = node.send(msg, successor.ipAddr)
 	if err != nil {
 		return
@@ -406,7 +406,7 @@ func (node *ChordNode) stabilize() {
 	}
 
 	//	Ask successor for predecessor
-	msg = getpredMsg()
+	msg = getPredecessorMessage()
 	reply, err = node.send(msg, successor.ipAddr)
 	if err != nil {
 		return
@@ -418,11 +418,11 @@ func (node *ChordNode) stabilize() {
 	}
 	if predecessorOfSuccessor.ipAddr != "" {
 		if predecessorOfSuccessor.id != node.id {
-			//if InRange(predecessorOfSuccessor.id, node.id, successor.id) {
+			if InRange(predecessorOfSuccessor.id, node.id, successor.id) {
 				node.successor = &predecessorOfSuccessor
 				node.fingerTable[1] = predecessorOfSuccessor
 				node.successorList[0] = predecessorOfSuccessor
-			//}
+			}
 		} else { // Everything is fine
 			return
 		}
@@ -432,7 +432,7 @@ func (node *ChordNode) stabilize() {
 	me := new(Finger)
 	me.id = node.id
 	me.ipAddr = node.ipAddr
-	msg = claimpredMsg(*me)
+	msg = claimPredecessorMessage(*me)
 	node.send(msg, successor.ipAddr)
 }
 
@@ -459,7 +459,7 @@ func (node *ChordNode) checkPredecessor() {
 		return
 	}
 
-	msg := pingMsg()
+	msg := pingMessage()
 	reply, err := node.send(msg, predecessor.ipAddr)
 	if err != nil {
 		predecessor.ipAddr = ""
@@ -500,7 +500,7 @@ func (node *ChordNode) fixFinger() {
 		}
 
 		// Find the id of node
-		msg := getidMsg()
+		msg := getIdMessage()
 		reply, err := node.send(msg, newip)
 		if err != nil {
 			logger.Error.Printf("%s\n", err.Error())

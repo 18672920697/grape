@@ -1,4 +1,4 @@
-package cache
+package chord
 
 import (
 	"fmt"
@@ -145,19 +145,9 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 
 }
 
-//Listens at an address for incoming messages
+// Listens at an address for incoming messages
 func (node *ChordNode) listen(addr string) {
-	c := make(chan []byte)
-	c2 := make(chan []byte)
-	go func() {
-		defer fmt.Printf("No longer listening...\n")
-		for {
-			message := <-c
-			node.parseMessage(message, c2)
-		}
-	}()
-
-	//listen to TCP port
+	// Listen to TCP port
 	laddr := new(net.TCPAddr)
 	laddr.IP = net.ParseIP(strings.Split(addr, ":")[0])
 	port, _ := strconv.Atoi(strings.Split(addr, ":")[1])
@@ -173,7 +163,7 @@ func (node *ChordNode) listen(addr string) {
 				if err != nil {
 					logger.Error.Printf("%s\n", err.Error())
 				}
-				go handleMessage(conn, c, c2)
+				go node.handleMessage(conn)
 			} else {
 				if err != nil {
 					logger.Error.Printf("%s\n", err.Error())
@@ -184,13 +174,11 @@ func (node *ChordNode) listen(addr string) {
 	}()
 }
 
-func handleMessage(conn net.Conn, c chan []byte, c2 chan []byte) {
-
-	//Close conenction when function exits
+func (node *ChordNode) handleMessage(conn net.Conn) {
+	// Close conenction when function exits
 	defer conn.Close()
 	for {
-
-		//Create data buffer of type byte slice
+		// Create data buffer of type byte slice
 		data := make([]byte, 100000) //TODO: use framing here
 		err := conn.SetDeadline(time.Now().Add(3 * time.Minute))
 		n, err := conn.Read(data)
@@ -205,10 +193,7 @@ func handleMessage(conn net.Conn, c chan []byte, c2 chan []byte) {
 			return
 		}
 
-		c <- data[:n]
-
-		//wait for message to come back
-		response := <-c2
+    response := node.parseMessage(data[:n])
 
 		err = conn.SetDeadline(time.Now().Add(3 * time.Minute))
 		n, err = conn.Write(response)

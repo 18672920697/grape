@@ -1,4 +1,4 @@
-package cache
+package chord
 
 import (
 	"testing"
@@ -40,6 +40,8 @@ func TestPredecessorAndSuccessor(t *testing.T) {
 	node5.afterJoin(sucessor)
 
 	time.Sleep(5 * time.Second)
+
+	node3.stabilize()
 	// Check node1
 	if node1.successor.ipAddr != node4.ipAddr {
 		t.Errorf("the predecessor of %s is wrong.", node1.ipAddr)
