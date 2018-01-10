@@ -330,8 +330,8 @@ func (node *ChordNode) parseMessage(data []byte) []byte {
 	return nil
 }
 
-//parseFingers can be called to return a finger table from a received
-//message after a getfingers call.
+// parseFingers can be called to return a finger table from a received
+// message after a getFingers call.
 func parseFingers(data []byte) (ft []Finger, err error) {
 	msg := new(chordMessages.NetworkMessage)
 	err = proto.Unmarshal(data, msg)

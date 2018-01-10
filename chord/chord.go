@@ -401,12 +401,11 @@ func (node *ChordNode) stabilize() {
 	}
 	for i := range ft {
 		if i < sha256.Size*8-1 {
-			//node.query(true, true, i+1, &ft[i])
 			node.successorList[i+1] = ft[i]
 		}
 	}
 
-	//	Ask successor for predecessor
+	// Ask successor for predecessor
 	msg = getPredecessorMessage()
 	reply, err = node.send(msg, successor.ipAddr)
 	if err != nil {
@@ -414,7 +413,7 @@ func (node *ChordNode) stabilize() {
 	}
 
 	predecessorOfSuccessor, err := parseFinger(reply)
-	if err != nil { // Node failed
+	if err != nil {
 		return
 	}
 	if predecessorOfSuccessor.ipAddr != "" {
@@ -479,7 +478,6 @@ func (node *ChordNode) checkPredecessor() {
 	return
 }
 
-//
 func (node *ChordNode) fixFinger() {
 	for which := 0; which < 257; which++ {
 		successor := node.fingerTable[1]

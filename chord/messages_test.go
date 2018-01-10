@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"crypto/sha256"
 	"github.com/golang/protobuf/proto"
 	"github.com/leviathan1995/grape/proto"
 	"testing"
@@ -54,16 +55,34 @@ func Test_sendFingersMessage(t *testing.T) {
 	}
 }
 
+func Test_sendPredecessorMessage(t *testing.T) {
+	ipAddr := "127.0.0.1:16002"
+	finger := Finger{
+		id:     sha256.Sum256([]byte(ipAddr)),
+		ipAddr: ipAddr,
+	}
+	sendPredecessorMsg := sendPredecessorMessage(finger)
+	parse, err := parseFinger(sendPredecessorMsg)
+	if err != nil {
+		t.Errorf("Parse sendPredecessorMessage error.")
+	}
+	if parse.ipAddr != ipAddr {
+		t.Errorf("sendPredecessorMessage error.")
+	}
+}
+
 func Test_parseMessage(t *testing.T) {
 	var node1Addr = "127.0.0.1:12601"
-	var node2Addr = "127.0.0.1:12502"
+	var node2Addr = "127.0.0.1:12602"
 	var node3Addr = "127.0.0.1:12603"
 	var node4Addr = "127.0.0.1:12604"
+	var node5Addr = "127.0.0.1:12605"
 
 	var node1 = Create(node1Addr)
 	var node2 = Create(node2Addr)
 	var node3 = Create(node3Addr)
 	var node4 = Create(node4Addr)
+	var node5 = Create(node5Addr)
 
 	sucessor, _ := node1.Join(node2.ipAddr)
 	node2.afterJoin(sucessor)
@@ -73,6 +92,9 @@ func Test_parseMessage(t *testing.T) {
 
 	sucessor, _ = node1.Join(node4.ipAddr)
 	node4.afterJoin(sucessor)
+
+	sucessor, _ = node1.Join(node5.ipAddr)
+	node5.afterJoin(sucessor)
 
 	// Ping
 	pingMsg := pingMessage()

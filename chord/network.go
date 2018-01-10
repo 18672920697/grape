@@ -51,7 +51,7 @@ func Send(msg []byte, addr string) (reply []byte, err error) {
 		return
 	}
 
-	reply = make([]byte, 100000) //TODO: use framing here
+	reply = make([]byte, 10000000) //TODO: use framing here
 	n, err := conn.Read(reply)
 	if err != nil {
 		return
@@ -133,7 +133,7 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 		node.connections[addr] = conn
 	}
 
-	reply = make([]byte, 100000) //TODO: use framing here
+	reply = make([]byte, 10000000) //TODO: use framing here
 	n, err := conn.Read(reply)
 	conn.SetDeadline(time.Now().Add(3 * time.Minute))
 	if err != nil {
@@ -179,7 +179,7 @@ func (node *ChordNode) handleMessage(conn net.Conn) {
 	defer conn.Close()
 	for {
 		// Create data buffer of type byte slice
-		data := make([]byte, 100000) //TODO: use framing here
+		data := make([]byte, 10000000) //TODO: use framing here
 		err := conn.SetDeadline(time.Now().Add(3 * time.Minute))
 		n, err := conn.Read(data)
 		if n >= 4095 {
@@ -204,7 +204,7 @@ func (node *ChordNode) handleMessage(conn net.Conn) {
 			}
 			return
 		}
-		if n > 100000 {
+		if n > 10000000 {
 			fmt.Printf("Uh oh. Wrote %d bytes.\n", n)
 		}
 	}
