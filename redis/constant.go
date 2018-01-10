@@ -1,5 +1,5 @@
 // constant
-package protocol
+package redis
 
 const (
 	RequestFinish      = iota

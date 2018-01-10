@@ -1,5 +1,5 @@
 // parser
-package protocol
+package redis
 
 import (
 	"strings"
