@@ -46,12 +46,12 @@ func (e *PeerError) Error() string {
 	return fmt.Sprintf("Failed to connect to peer: %s. Cause of failure: %s.", e.Address, e.Err)
 }
 
-//	Lookup returns the address of the successor of key in the Chord DHT.
-//	The lookup process is iterative. Beginning with the address of a
-//	Chord node, start, this function will request the finger tables of
-//	the closest preceeding Chord node to key until the successor is found.
+// Lookup returns the address of the successor of key in the Chord DHT.
+// The lookup process is iterative. Beginning with the address of a
+// Chord node, start, this function will request the finger tables of
+// the closest preceeding Chord node to key until the successor is found.
 //
-//	If the start address is unreachable, the error is of type PeerError.
+// If the start address is unreachable, the error is of type PeerError.
 func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 
 	addr = start
@@ -135,7 +135,7 @@ func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 
 //	Lookup returns the address of the ChordNode that is responsible
 //	for the key. The procedure begins at the address denoted by start.
-func (node *ChordNode) lookup(key [sha256.Size]byte, start string) (addr string, err error) {
+func (node *ChordNode) Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 
 	addr = start
 
@@ -169,7 +169,7 @@ func (node *ChordNode) lookup(key [sha256.Size]byte, start string) (addr string,
 			break
 		}
 		if InRange(f.id, current.id, key) { //see if f.id is closer than I am.
-			addr, err = node.lookup(key, f.ipAddr)
+			addr, err = node.Lookup(key, f.ipAddr)
 			if err != nil { //node failed
 				continue
 			}
@@ -488,7 +488,7 @@ func (node *ChordNode) fixFinger() {
 		}
 		var targetId [sha256.Size]byte
 		copy(targetId[:sha256.Size], target(node.id, which)[:sha256.Size])
-		newip, err := node.lookup(targetId, successor.ipAddr)
+		newip, err := node.Lookup(targetId, successor.ipAddr)
 		if err != nil {
 			logger.Error.Printf("%s\n", err.Error())
 			continue
