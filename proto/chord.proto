@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package chordMsgs;
+package chordMessages;
 
 message SendIdMessage {
 	string id = 1;
@@ -11,8 +11,8 @@ message FingerMessage {
 	string id = 2;
 }
 
-message PredMessage {
-	FingerMessage pred = 1;
+message PredecessorMessage {
+	FingerMessage predecessor = 1;
 }
 
 message SendFingersMessage {
@@ -22,18 +22,18 @@ message SendFingersMessage {
 
 message ChordMessage {
 	Command cmd = 1;
-	PredMessage cpmsg = 2;
+	PredecessorMessage cpmsg = 2;
 	SendIdMessage sidmsg = 4;
 	SendFingersMessage sfmsg = 5;
 
 	enum Command {
 		Ping = 0;
 		Pong = 1;
-		GetPred = 2;
+		GetPredecessor = 2;
 		GetId = 3;
 		GetFingers = 4;
-		ClaimPred = 5;
-		GetSucc = 6;
+		ClaimPredecessor = 5;
+		GetSuccessor = 6;
 	};
 }
 
