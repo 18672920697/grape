@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//	Finger type denoting identifying information about a ChordNode
+// Finger type denoting identifying information about a ChordNode
 type Finger struct {
 	id     [sha256.Size]byte
 	ipAddr string
@@ -162,15 +162,15 @@ func (node *ChordNode) Lookup(key [sha256.Size]byte, start string) (addr string,
 		return
 	}
 
-	//loop through finger table and see what the closest finger is
+	// loop through finger table and see what the closest finger is
 	for i := len(ft) - 1; i > 0; i-- {
 		f := ft[i]
 		if i == 0 {
 			break
 		}
-		if InRange(f.id, current.id, key) { //see if f.id is closer than I am.
+		if InRange(f.id, current.id, key) { // if f.id is closer than I am.
 			addr, err = node.Lookup(key, f.ipAddr)
-			if err != nil { //node failed
+			if err != nil {
 				continue
 			}
 			return
@@ -180,9 +180,9 @@ func (node *ChordNode) Lookup(key [sha256.Size]byte, start string) (addr string,
 	msg = pingMessage()
 	reply, err = node.send(msg, addr)
 
-	//this code is executed if the id's successor has gone missing
+	// If the id's successor has gone missing
 	if err != nil {
-		//ask node for its successor list
+		// Ask node for its successor list
 		msg = getSuccessorsMessage()
 		reply, err = node.send(msg, current.ipAddr)
 		if err != nil {
@@ -215,7 +215,7 @@ func (node *ChordNode) Lookup(key [sha256.Size]byte, start string) (addr string,
 	return
 }
 
-//	Create will start a new Chord DHT and return the original ChordNode
+// Create will start a new Chord DHT and return the original ChordNode
 func Create(myaddr string) *ChordNode {
 	node := new(ChordNode)
 	// Initialize node information
@@ -230,13 +230,13 @@ func Create(myaddr string) *ChordNode {
 	pred := new(Finger)
 	node.predecessor = pred
 
-	//	Set up channels for finger manager
+	// Set up channels for finger manager
 	c := make(chan Finger)
 	c2 := make(chan request)
 	node.finger = c
 	node.request = c2
 
-	//	Initialize listener and network manager threads
+	// Initialize listener and network manager threads
 	node.listen(myaddr)
 	node.connections = make(map[string]net.TCPConn)
 
@@ -254,10 +254,10 @@ func Create(myaddr string) *ChordNode {
 	return node
 }
 
-//	Join will add a new ChordNode to an existing DHT. It looks up the successor
-//	of the new node starting at an existing Chord node specified by addr.
+// Join will add a new ChordNode to an existing DHT. It looks up the successor
+// of the new node starting at an existing Chord node specified by addr.
 //
-//	If the start address is unreachable, the error is of type PeerError.
+// If the start address is unreachable, the error is of type PeerError.
 func (node *ChordNode) Join(peerAddr string) (*Finger, error) {
 	newId := sha256.Sum256([]byte(peerAddr))
 	successor, err := Lookup(newId, node.ipAddr)
@@ -265,14 +265,14 @@ func (node *ChordNode) Join(peerAddr string) (*Finger, error) {
 		return nil, &PeerError{peerAddr, err}
 	}
 
-	//	find the id of successor node
+	// Find the id of successor node
 	msg := getIdMessage()
 	reply, err := Send(msg, successor)
 	if err != nil {
 		return nil, &PeerError{peerAddr, err}
 	}
 
-	//	update node info to include successor
+	// Update node info to include successor
 	succ := new(Finger)
 	succ.id, err = parseId(reply)
 	if err != nil {
