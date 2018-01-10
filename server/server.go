@@ -76,7 +76,7 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 
 func joinCluster(config *config.Config, cache *cache.Cache) {
 	for _, peers := range config.RemotePeers {
-		_,err := cache.Chord.Join(peers)
+		_, err := cache.Chord.Join(peers)
 		if err != nil {
 			logger.Error.Print(err)
 		}

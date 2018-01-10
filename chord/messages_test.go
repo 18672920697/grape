@@ -1,9 +1,9 @@
 package chord
 
 import (
-	"testing"
-	"github.com/leviathan1995/grape/proto"
 	"github.com/golang/protobuf/proto"
+	"github.com/leviathan1995/grape/proto"
+	"testing"
 )
 
 func Test_getFingersMessage(t *testing.T) {
@@ -18,7 +18,7 @@ func Test_getFingersMessage(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unmarshaling getFingersMessage error: %s.", err.Error())
 	}
-  if int32(chordMsg.GetCmd()) != chordMessages.ChordMessage_Command_value["GetFingers"] {
+	if int32(chordMsg.GetCmd()) != chordMessages.ChordMessage_Command_value["GetFingers"] {
 		t.Errorf("Construct getFingersMessage command error.%d,%d", int32(chordMsg.GetCmd()), chordMessages.ChordMessage_Command_value["GetPredecessor"])
 	}
 }
@@ -47,7 +47,7 @@ func Test_sendFingersMessage(t *testing.T) {
 
 	// Parse fingers
 	fingerMsg := chordMsg.GetSfmsg().GetFingers()
-	for index,finger  := range fingerMsg {
+	for index, finger := range fingerMsg {
 		if finger.Address != fingers[index].ipAddr {
 			t.Errorf("Parse fingers error: %s-%s", finger.Address, fingers[index].ipAddr)
 		}
@@ -55,7 +55,7 @@ func Test_sendFingersMessage(t *testing.T) {
 }
 
 func Test_parseMessage(t *testing.T) {
-  var node1Addr = "127.0.0.1:12601"
+	var node1Addr = "127.0.0.1:12601"
 	var node2Addr = "127.0.0.1:12502"
 	var node3Addr = "127.0.0.1:12603"
 	var node4Addr = "127.0.0.1:12604"
@@ -65,61 +65,61 @@ func Test_parseMessage(t *testing.T) {
 	var node3 = Create(node3Addr)
 	var node4 = Create(node4Addr)
 
-	sucessor,_ := node1.Join(node2.ipAddr)
+	sucessor, _ := node1.Join(node2.ipAddr)
 	node2.afterJoin(sucessor)
 
-	sucessor,_ = node1.Join(node3.ipAddr)
+	sucessor, _ = node1.Join(node3.ipAddr)
 	node3.afterJoin(sucessor)
 
-	sucessor,_ = node1.Join(node4.ipAddr)
+	sucessor, _ = node1.Join(node4.ipAddr)
 	node4.afterJoin(sucessor)
 
-  // Ping
-  pingMsg := pingMessage()
-  parseResp := node1.parseMessage(pingMsg)
-  success, err := parsePong(parseResp)
-  if err != nil {
-    t.Errorf("Parse Ping message error.")
-  }
+	// Ping
+	pingMsg := pingMessage()
+	parseResp := node1.parseMessage(pingMsg)
+	success, err := parsePong(parseResp)
+	if err != nil {
+		t.Errorf("Parse Ping message error.")
+	}
 
-  if !success {
-    t.Errorf("pingMessage error.")
-  }
+	if !success {
+		t.Errorf("pingMessage error.")
+	}
 
-  // GetPredecessor
-  getPredecessorMsg := getPredecessorMessage()
-  parseResp = node1.parseMessage(getPredecessorMsg)
-  finger, err := parseFinger(parseResp)
-  if err != nil {
-    t.Errorf("Parse Predecessor message error.")
-  }
+	// GetPredecessor
+	getPredecessorMsg := getPredecessorMessage()
+	parseResp = node1.parseMessage(getPredecessorMsg)
+	finger, err := parseFinger(parseResp)
+	if err != nil {
+		t.Errorf("Parse Predecessor message error.")
+	}
 
-  if finger.ipAddr == "" {
-    t.Errorf("getPredecessorMessage error.")
-  }
+	if finger.ipAddr == "" {
+		t.Errorf("getPredecessorMessage error.")
+	}
 
-  // GetId
-  getIdMsg := getIdMessage()
-  parseResp = node1.parseMessage(getIdMsg)
-  id,err := parseId(parseResp)
-  if err != nil {
-    t.Errorf("Parse Id message error.")
-  }
+	// GetId
+	getIdMsg := getIdMessage()
+	parseResp = node1.parseMessage(getIdMsg)
+	id, err := parseId(parseResp)
+	if err != nil {
+		t.Errorf("Parse Id message error.")
+	}
 
-  if string(id[:]) == "" {
-    t.Errorf("getIdMessage error.")
-  }
+	if string(id[:]) == "" {
+		t.Errorf("getIdMessage error.")
+	}
 
-  // GetSuccessors
-  getSuccessorMsg := getSuccessorsMessage()
-  parseResp = node1.parseMessage(getSuccessorMsg)
-  fingers, err := parseFingers(parseResp)
-  if err != nil {
-    t.Errorf("Parse Successors error.")
-  }
-  for _, finger := range fingers {
-    if finger.ipAddr == "" {
-      t.Errorf("getSuccessorsMessage error.")
-    }
-  }
+	// GetSuccessors
+	getSuccessorMsg := getSuccessorsMessage()
+	parseResp = node1.parseMessage(getSuccessorMsg)
+	fingers, err := parseFingers(parseResp)
+	if err != nil {
+		t.Errorf("Parse Successors error.")
+	}
+	for _, finger := range fingers {
+		if finger.ipAddr == "" {
+			t.Errorf("getSuccessorsMessage error.")
+		}
+	}
 }

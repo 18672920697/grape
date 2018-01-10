@@ -193,7 +193,7 @@ func (node *ChordNode) handleMessage(conn net.Conn) {
 			return
 		}
 
-    response := node.parseMessage(data[:n])
+		response := node.parseMessage(data[:n])
 
 		err = conn.SetDeadline(time.Now().Add(3 * time.Minute))
 		n, err = conn.Write(response)

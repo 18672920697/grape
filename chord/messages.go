@@ -286,13 +286,13 @@ func (node *ChordNode) parseMessage(data []byte) []byte {
 	cmd := int32(chordmsg.GetCmd())
 	switch {
 	case cmd == chordMessages.ChordMessage_Command_value["Ping"]:
-	  return pongMessage()
+		return pongMessage()
 	case cmd == chordMessages.ChordMessage_Command_value["GetPredecessor"]:
 		predecessor := *node.predecessor
 		if predecessor.zero() {
 			return nullMessage()
 		} else {
-		  return sendPredecessorMessage(predecessor)
+			return sendPredecessorMessage(predecessor)
 		}
 	case cmd == chordMessages.ChordMessage_Command_value["GetId"]:
 		return sendIdMessage(node.id[:32])
@@ -327,7 +327,7 @@ func (node *ChordNode) parseMessage(data []byte) []byte {
 		return sendFingersMessage(table)
 	}
 	fmt.Printf("No matching commands.\n")
-  return nil
+	return nil
 }
 
 //parseFingers can be called to return a finger table from a received

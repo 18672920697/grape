@@ -16,9 +16,9 @@ type Finger struct {
 }
 
 type request struct {
-	write bool
-	successor  bool
-	index int
+	write     bool
+	successor bool
+	index     int
 }
 
 //	ChordNode type denoting a Chord server.
@@ -28,13 +28,13 @@ type ChordNode struct {
 	successorList [sha256.Size * 8]Finger
 	fingerTable   [sha256.Size*8 + 1]Finger
 
-	finger       chan Finger
-	request      chan request
+	finger  chan Finger
+	request chan request
 
 	id     [sha256.Size]byte
 	ipAddr string
 
-	connections  map[string]net.TCPConn
+	connections map[string]net.TCPConn
 }
 
 type PeerError struct {
@@ -290,11 +290,12 @@ func (node *ChordNode) afterJoin(successor *Finger) {
 	node.stabilize()
 	node.fixFinger()
 }
+
 //	Manages reads and writes to the route table of node
 func (node *ChordNode) infoRouteTable() {
 	for {
 		req := <-node.request
-		if req.write {	// write
+		if req.write { // write
 			if req.successor {
 				node.successorList[req.index] = <-node.finger
 			} else {
@@ -308,7 +309,7 @@ func (node *ChordNode) infoRouteTable() {
 					node.fingerTable[req.index] = <-node.finger
 				}
 			}
-		} else {	// read
+		} else { // read
 			if req.successor {
 				node.finger <- node.successorList[req.index]
 			} else {

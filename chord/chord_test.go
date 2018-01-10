@@ -11,7 +11,7 @@ func init() {
 
 /*
 	node1 - node4 - node3 - node5 - node2
- */
+*/
 func TestPredecessorAndSuccessor(t *testing.T) {
 	var node1Addr = "127.0.0.1:12601"
 	var node2Addr = "127.0.0.1:12502"
@@ -25,18 +25,18 @@ func TestPredecessorAndSuccessor(t *testing.T) {
 	var node4 = Create(node4Addr)
 	var node5 = Create(node5Addr)
 
-	sucessor,_ := node1.Join(node2.ipAddr)
+	sucessor, _ := node1.Join(node2.ipAddr)
 	node2.afterJoin(sucessor)
 
-	sucessor,_ = node1.Join(node3.ipAddr)
+	sucessor, _ = node1.Join(node3.ipAddr)
 	node3.afterJoin(sucessor)
 
-	sucessor,_ = node1.Join(node4.ipAddr)
+	sucessor, _ = node1.Join(node4.ipAddr)
 	node4.afterJoin(sucessor)
 
 	time.Sleep(5 * time.Second)
 
-	sucessor,_ = node1.Join(node5.ipAddr)
+	sucessor, _ = node1.Join(node5.ipAddr)
 	node5.afterJoin(sucessor)
 
 	time.Sleep(5 * time.Second)
