@@ -5,6 +5,7 @@ import (
 	"github.com/leviathan1995/grape/consistent"
 	"github.com/leviathan1995/grape/logger"
 	"github.com/leviathan1995/grape/redis"
+	"github.com/leviathan1995/grape/chord"
 
 	"bytes"
 	"crypto/sha256"
@@ -20,7 +21,7 @@ type Cache struct {
 	consistency *consistent.Consistent
 	RouteTable  *map[string]bool
 	Connections map[string]net.TCPConn
-	Chord       *ChordNode
+	Chord       *chord.ChordNode
 	sync.Mutex
 	sync.RWMutex
 }
@@ -31,20 +32,14 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 		route[node] = false
 	}
 
-	me := new(Finger)
-	me.id = sha256.Sum256([]byte(config.Address))
-	me.ipAddr = config.Address
-
 	cache := &Cache{
 		shards:      make([]*cacheShard, config.Shards),
 		Config:      config,
 		consistency: consistency,
 		RouteTable:  &route,
 		Connections: make(map[string]net.TCPConn),
-		Chord:       Create(config.Address),
+		Chord:       chord.Create(config.Address),
 	}
-
-	cache.Chord.fingerTable[0] = *me
 
 	for i := 0; i < config.Shards; i++ {
 		cache.shards[i] = NewShard()
@@ -55,7 +50,7 @@ func NewCache(config *config.Config, consistency *consistent.Consistent) *Cache 
 // Check this key whether store in node
 func (cache *Cache) CheckKey(key string) (bool, string) {
 	hashKey := sha256.Sum256([]byte(key))
-	server, _ := cache.Chord.lookup(hashKey, cache.Config.Address)
+	server, _ := cache.Chord.Lookup(hashKey, cache.Config.Address)
 	if server != cache.Config.Address {
 		return false, server
 	} else {
