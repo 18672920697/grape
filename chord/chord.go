@@ -3,10 +3,11 @@ package chord
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/leviathan1995/grape/logger"
 	"math/big"
 	"net"
 	"time"
+
+	"github.com/leviathan1995/grape/logger"
 )
 
 // Finger type denoting identifying information about a ChordNode
@@ -21,7 +22,7 @@ type request struct {
 	index     int
 }
 
-//	ChordNode type denoting a Chord server.
+// ChordNode type denoting a Chord server.
 type ChordNode struct {
 	predecessor   *Finger
 	successor     *Finger
@@ -133,8 +134,8 @@ func Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 	return
 }
 
-//	Lookup returns the address of the ChordNode that is responsible
-//	for the key. The procedure begins at the address denoted by start.
+// Lookup returns the address of the ChordNode that is responsible
+// for the key. The procedure begins at the address denoted by start.
 func (node *ChordNode) Lookup(key [sha256.Size]byte, start string) (addr string, err error) {
 
 	addr = start
@@ -247,7 +248,7 @@ func Create(myaddr string) *ChordNode {
 	// Update fingers
 	node.fixFinger()
 
-	//	Initialize maintenance and finger manager threads
+	// Initialize maintenance and finger manager threads
 	go node.infoRouteTable()
 	go node.maintainRouteTable()
 
@@ -628,7 +629,7 @@ func (node *ChordNode) String() string {
 	return fmt.Sprintf("%s\t%s\t%s\n", node.ipAddr, succ, pred)
 }
 
-//ShowFingers returns a string representation of the ChordNode's finger table.
+// ShowFingers returns a string representation of the ChordNode's finger table.
 func (node *ChordNode) ShowFingers() string {
 	retval := ""
 	finger := new(Finger)
@@ -662,4 +663,12 @@ func (node *ChordNode) ShowSucc() string {
 		*prevfinger = *finger
 	}
 	return table
+}
+
+func (node *ChordNode) GetSuccessorAddr() string {
+	return node.successor.ipAddr
+}
+
+func (node *ChordNode) GetPredecessorAddr() string {
+	return node.predecessor.ipAddr
 }

@@ -21,7 +21,6 @@ func printConf(conf config.Config) {
 
 func main() {
 	logger.Init(os.Stdout, os.Stdout, os.Stderr)
-
 	logger.Info.Printf("Grape is starting")
 
 	var confFile string
@@ -34,7 +33,6 @@ func main() {
 	logger.Info.Printf("======================================")
 
 	consistency := consistent.New()
-
 	// Add node to consistency process
 	consistency.AddNode(conf.Address)
 	for _, peer := range conf.RemotePeers {

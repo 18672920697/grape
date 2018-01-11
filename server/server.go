@@ -6,7 +6,6 @@ import (
 	"github.com/leviathan1995/grape/logger"
 	"github.com/leviathan1995/grape/redis"
 
-	//"bufio"
 	"bufio"
 	"fmt"
 	"io"
@@ -15,52 +14,21 @@ import (
 )
 
 const (
-	receiveBufferSize = 1024 * 4
-	sendBufferSize    = 1024 * 4
+	receiveBufferSize = 1024 * 10 * 2
+	sendBufferSize    = 1024 * 10 * 2
 )
 
 func StartServer(config *config.Config, cache *cache.Cache) {
 	listen, err := net.Listen("tcp", fmt.Sprintf("%s", config.Address))
 	if err != nil {
-		panic(err)
+		logger.Error.Printf("Listen in %s failed.", config.Address)
 	}
 	defer listen.Close()
-
-	/*
-		monitorStart := make(chan bool)
-		// Monitor heartbeat port
-		go MonitorHeartbeat(config, cache, monitorStart)
-
-		select {
-		case start := <-monitorStart:
-			if start {
-				logger.Info.Printf("Heartbeat monitor start...")
-			}
-		}
-
-		// Check the networks of cluster
-		logger.Info.Printf("Wait for all nodes connected ")
-		for !ClusterConnected(cache) {
-			sendHeartbeat(cache)
-		}
-
-		(*cache).RLock()
-		for peer, status := range *cache.RouteTable {
-			if status {
-				logger.Info.Printf("Connecting to node %s OK", peer)
-			}
-		}
-		(*cache).RUnlock()
-		logger.Info.Printf("Create cluster success...")
-
-		// Send heartbeat to others at a fixed interval of time
-		go Heartbeat(config, cache)
-	*/
 
 	joinCluster(config, cache)
 
 	// Start service
-	logger.Info.Printf("Start service...")
+	logger.Info.Printf("Start service.")
 	for {
 		select {
 		default:
@@ -180,17 +148,4 @@ func ForwardRequest(request, addr string, cache *cache.Cache) string {
 		return string("-Can not connect to destination Node\r\n")
 	}
 	return string(reply[0:length])
-}
-
-func ClusterConnected(cache *cache.Cache) bool {
-	(*cache).RLock()
-	defer (*cache).RUnlock()
-
-	for _, status := range *cache.RouteTable {
-		if status == false {
-			return status
-		}
-	}
-
-	return true
 }

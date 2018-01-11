@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-//Send is a helper function for sending a message to a peer in the Chord DHT.
-//It opens a connection to the Chord node with the IP address addr,
-//sends the message msg, and waits for a reply
+// Send is a helper function for sending a message to a peer in the Chord DHT.
+// It opens a connection to the Chord node with the IP address addr,
+// sends the message msg, and waits for a reply
 func Send(msg []byte, addr string) (reply []byte, err error) {
 	//TODO: return error if reply took too long
 
@@ -103,7 +103,7 @@ func (node *ChordNode) send(msg []byte, addr string) (reply []byte, err error) {
 	_, err = conn.Write(msg)
 	conn.SetDeadline(time.Now().Add(3 * time.Minute))
 	if err != nil {
-		//might have timed out
+		// might have timed out
 		//fmt.Printf("Connection from %s to %s is no good. Creating new...\n", node.ipaddr, addr)
 		laddr := new(net.TCPAddr)
 		laddr.IP = net.ParseIP(strings.Split(node.ipAddr, ":")[0])

@@ -1,16 +1,17 @@
 package cache
 
 import (
+	"github.com/leviathan1995/grape/chord"
 	"github.com/leviathan1995/grape/config"
 	"github.com/leviathan1995/grape/consistent"
 	"github.com/leviathan1995/grape/logger"
 	"github.com/leviathan1995/grape/redis"
-	"github.com/leviathan1995/grape/chord"
 
 	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -124,29 +125,14 @@ func (cache *Cache) HandlePing(args []string) (redis.Status, string) {
 func (cache *Cache) HandleInfo(args []string) (redis.Status, string) {
 	var resp bytes.Buffer
 
-	(*cache).RWMutex.RLock()
-	num := fmt.Sprintf("*%d\r\n", len(*cache.RouteTable)+1)
-	(*cache).RWMutex.RUnlock()
-	resp.WriteString(num)
+	title := "# Server\r\n"
+	successorAddr := "Predecessor: " + cache.Chord.GetPredecessorAddr() + "\r\n"
+	predecessorAddr := "Successor: " + cache.Chord.GetSuccessorAddr() + "\r\n"
 
-	title := fmt.Sprintf("$%d\r\n%s\r\n", len("Connect status:"), "Connect status:")
-	resp.WriteString(title)
+	resp.WriteString("$" + strconv.Itoa(len(title)+len(successorAddr)+len(predecessorAddr)) + "\r\n")
+	resp.WriteString(title + successorAddr + predecessorAddr + "\r\n")
 
-	(*cache).RWMutex.RLock()
-	for peer, status := range *cache.RouteTable {
-		var str_status, peer_status string
-		if status {
-			str_status = "Up"
-		} else {
-			str_status = "Down"
-		}
-		peer_status = fmt.Sprintf("$%d\r\n%s\r\n", len(peer+": "+str_status), peer+": "+str_status)
-		resp.WriteString(peer_status)
-	}
-	(*cache).RWMutex.RUnlock()
-
-	strResp := resp.String()
-	return redis.RequestFinish, strResp
+	return redis.RequestFinish, resp.String()
 }
 
 func (cache *Cache) HandleJoin(args []string) (redis.Status, string) {
