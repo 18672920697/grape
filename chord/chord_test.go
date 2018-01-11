@@ -54,5 +54,4 @@ func TestPredecessorAndSuccessor(t *testing.T) {
 	if node3.predecessor.ipAddr != node1.ipAddr {
 		t.Errorf("the successor of %s is wrong.", node3.ipAddr)
 	}
-
 }
