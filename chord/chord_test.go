@@ -22,10 +22,10 @@ func TestPredecessorAndSuccessor(t *testing.T) {
 	var node3 = Create(node3Addr)
 
 	sucessor, _ := node1.Join(node2.ipAddr)
-	node2.afterJoin(sucessor)
+	node2.AfterJoin(sucessor.ipAddr)
 
 	sucessor, _ = node1.Join(node3.ipAddr)
-	node3.afterJoin(sucessor)
+	node3.AfterJoin(sucessor.ipAddr)
 
 	time.Sleep(3 * time.Second)
 	// Check node1

@@ -1,13 +1,13 @@
 package chord
 
 import (
+	"github.com/leviathan1995/grape/logger"
+
 	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"net"
 	"time"
-
-	"github.com/leviathan1995/grape/logger"
 )
 
 // Finger type denoting identifying information about a ChordNode
@@ -284,7 +284,11 @@ func (node *ChordNode) Join(peerAddr string) (*Finger, error) {
 	return succ, nil
 }
 
-func (node *ChordNode) afterJoin(successor *Finger) {
+func (node *ChordNode) AfterJoin(successorAddr string) {
+	successor := &Finger{
+		sha256.Sum256([]byte(successorAddr)),
+		successorAddr,
+	}
 	node.successor = successor
 	node.fingerTable[1] = *successor
 	node.successorList[0] = *successor
@@ -454,7 +458,6 @@ func (node *ChordNode) notify(newPred Finger) {
 }
 
 func (node *ChordNode) checkPredecessor() {
-	//predecessor := node.query(false, false, -1, nil)
 	predecessor := *node.predecessor
 	if predecessor.zero() {
 		return
@@ -464,7 +467,6 @@ func (node *ChordNode) checkPredecessor() {
 	reply, err := node.send(msg, predecessor.ipAddr)
 	if err != nil {
 		predecessor.ipAddr = ""
-		//node.query(true, false, -1, &predecessor)
 		node.predecessor = &predecessor
 	} else {
 		return
@@ -472,7 +474,6 @@ func (node *ChordNode) checkPredecessor() {
 
 	if success, err := parsePong(reply); !success || err != nil {
 		predecessor.ipAddr = ""
-		//node.query(true, false, -1, &predecessor)
 		node.predecessor = &predecessor
 	}
 
@@ -597,7 +598,7 @@ func target(me [sha256.Size]byte, which int) []byte {
 	return bytes[:sha256.Size]
 }
 
-func (f Finger) String() string {
+func (f Finger) IpAddr() string {
 	return fmt.Sprintf("%s", f.ipAddr)
 }
 
@@ -617,12 +618,12 @@ func (node *ChordNode) String() string {
 	successor := node.query(false, false, 1, nil)
 	predecessor := node.query(false, false, -1, nil)
 	if !successor.zero() {
-		succ = successor.String()
+		succ = successor.IpAddr()
 	} else {
 		succ = "Unknown"
 	}
 	if !predecessor.zero() {
-		pred = predecessor.String()
+		pred = predecessor.IpAddr()
 	} else {
 		pred = "Unknown"
 	}
@@ -640,7 +641,7 @@ func (node *ChordNode) ShowFingers() string {
 		if !finger.zero() {
 			ctr += 1
 			if i == 0 || finger.ipAddr != prevfinger.ipAddr {
-				retval += fmt.Sprintf("%d %s\n", i, finger.String())
+				retval += fmt.Sprintf("%d %s\n", i, finger.IpAddr())
 			}
 		}
 		*prevfinger = *finger
@@ -657,7 +658,7 @@ func (node *ChordNode) ShowSucc() string {
 		*finger = node.query(false, true, i, nil)
 		if finger.ipAddr != "" {
 			if i == 0 || finger.ipAddr != prevfinger.ipAddr {
-				table += fmt.Sprintf("%s\n", finger.String())
+				table += fmt.Sprintf("%s\n", finger.IpAddr())
 			}
 		}
 		*prevfinger = *finger
@@ -671,4 +672,8 @@ func (node *ChordNode) GetSuccessorAddr() string {
 
 func (node *ChordNode) GetPredecessorAddr() string {
 	return node.predecessor.ipAddr
+}
+
+func (node *ChordNode) GetNodeAddr() string {
+	return node.ipAddr
 }

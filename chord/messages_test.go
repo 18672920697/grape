@@ -85,16 +85,16 @@ func Test_parseMessage(t *testing.T) {
 	var node5 = Create(node5Addr)
 
 	sucessor, _ := node1.Join(node2.ipAddr)
-	node2.afterJoin(sucessor)
+	node2.AfterJoin(sucessor.ipAddr)
 
 	sucessor, _ = node1.Join(node3.ipAddr)
-	node3.afterJoin(sucessor)
+	node3.AfterJoin(sucessor.ipAddr)
 
 	sucessor, _ = node1.Join(node4.ipAddr)
-	node4.afterJoin(sucessor)
+	node4.AfterJoin(sucessor.ipAddr)
 
 	sucessor, _ = node1.Join(node5.ipAddr)
-	node5.afterJoin(sucessor)
+	node5.AfterJoin(sucessor.ipAddr)
 
 	// Ping
 	pingMsg := pingMessage()

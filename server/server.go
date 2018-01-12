@@ -44,9 +44,12 @@ func StartServer(config *config.Config, cache *cache.Cache) {
 
 func joinCluster(config *config.Config, cache *cache.Cache) {
 	for _, peers := range config.RemotePeers {
-		_, err := cache.Chord.Join(peers)
+		successor, err := cache.Chord.Join(peers)
 		if err != nil {
 			logger.Error.Print(err)
+		}
+		if cache.Chord.GetSuccessorAddr() == "" && cache.Chord.GetNodeAddr() == successor.IpAddr() {
+			cache.Chord.AfterJoin(peers)
 		}
 	}
 }
